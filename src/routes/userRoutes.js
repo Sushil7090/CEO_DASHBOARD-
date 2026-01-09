@@ -1,216 +1,103 @@
 const express = require('express');
 const router = express.Router();
+const { User } = require('../../database/models'); 
+const bcrypt = require('bcrypt');
+const { v4: uuidv4 } = require('uuid');
 
-const {
-  Course,
-  User,
-  UserCourse
-} = require('../../database/models');
+// ✅ Correct middleware import
+const authenticateJWT = require('../middleware/auth.middleware');
+const { UserCourse, Course } = require('../../database/models');
 
-/* =====================================================
-   STATIC ROUTES (MUST BE FIRST)
-===================================================== */
 
-/**
- * GET ALL ENROLLMENTS WITH USERS & COURSES
- * GET /api/courses/enrollments/all
- */
-router.get('/enrollments/all', async (req, res) => {
+console.log('usersRoutes.js loaded'); // 🔹 Debug
+
+// Test route
+router.get('/test', (req, res) => {
+  res.json({ success: true, message: 'Users route works!' });
+});
+
+// GET all users
+router.get('/', async (req, res) => {
   try {
-    const enrollments = await UserCourse.findAll({
-      include: [
-        {
-          model: User,
-          attributes: ['id', 'firstName', 'lastName', 'email']
-        },
-        {
-          model: Course,
-          attributes: ['id', 'title', 'description']
-        }
-      ]
+    const users = await User.findAll({
+      attributes: ['id', 'firstName', 'lastName', 'email']
     });
-
-    res.json({
-      success: true,
-      enrollments
-    });
+    res.json({ success: true, users });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-/* =====================================================
-   COURSE COLLECTION ROUTES
-===================================================== */
-
-/**
- * CREATE COURSE
- * POST /api/courses
- */
+// CREATE user
 router.post('/', async (req, res) => {
   try {
-    const { title, description } = req.body;
-
-    if (!title) {
-      return res.status(400).json({
-        success: false,
-        message: 'title is required'
-      });
+    const { firstName, lastName, email, password } = req.body;
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({ success: false, message: 'All fields required' });
     }
 
-    const course = await Course.create({ title, description });
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) return res.status(409).json({ success: false, message: 'Email already exists' });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      id: uuidv4(),
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword
+    });
 
     res.status(201).json({
       success: true,
-      course
+      user: { id: user.id, firstName, lastName, email }
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-/**
- * GET ALL COURSES
- * GET /api/courses
- */
-router.get('/', async (req, res) => {
-  try {
-    const courses = await Course.findAll();
-    res.json({ success: true, courses });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
 /* =====================================================
-   COURSE ITEM ROUTES (DYNAMIC — LAST)
+   SUBSCRIBE TO COURSE (JWT PROTECTED)
+   POST /api/users/subscribe
 ===================================================== */
-
-/**
- * GET SINGLE COURSE
- * GET /api/courses/:id
- */
-router.get('/:id', async (req, res) => {
+router.post('/subscribe', authenticateJWT, async (req, res) => {
   try {
-    const course = await Course.findByPk(req.params.id);
+    const { courseId } = req.body;
+    const userId = req.user.id;
 
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
-    }
-
-    res.json({ success: true, course });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-/**
- * UPDATE COURSE
- * PUT /api/courses/:id
- */
-router.put('/:id', async (req, res) => {
-  try {
-    const { title, description } = req.body;
-
-    const course = await Course.findByPk(req.params.id);
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
-    }
-
-    await course.update({ title, description });
-
-    res.json({
-      success: true,
-      course
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-/**
- * DELETE COURSE
- * DELETE /api/courses/:id
- */
-router.delete('/:id', async (req, res) => {
-  try {
-    const course = await Course.findByPk(req.params.id);
-
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
-    }
-
-    await course.destroy();
-
-    res.json({
-      success: true,
-      message: 'Course deleted successfully'
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-/**
- * ENROLL USER INTO COURSE
- * POST /api/courses/:id/enroll
- */
-router.post('/:id/enroll', async (req, res) => {
-  try {
-    const { userId } = req.body;
-    const courseId = req.params.id;
-
-    if (!userId) {
+    if (!courseId) {
       return res.status(400).json({
         success: false,
-        message: 'userId is required'
+        message: 'courseId is required'
       });
     }
 
-    const user = await User.findByPk(userId);
     const course = await Course.findByPk(courseId);
-
-    if (!user || !course) {
+    if (!course) {
       return res.status(404).json({
         success: false,
-        message: 'User or Course not found'
+        message: 'Course not found'
       });
     }
 
-    const alreadyEnrolled = await UserCourse.findOne({
-      where: { userId, courseId }
-    });
-
-    if (alreadyEnrolled) {
-      return res.status(409).json({
-        success: false,
-        message: 'User already enrolled in this course'
-      });
-    }
-
-    const enrollment = await UserCourse.create({
+    await UserCourse.create({
       userId,
       courseId
     });
 
     res.status(201).json({
       success: true,
-      message: 'User enrolled successfully',
-      enrollment
+      message: 'Course subscribed successfully'
     });
 
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 });
+
 
 module.exports = router;

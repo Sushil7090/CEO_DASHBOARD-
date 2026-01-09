@@ -6,10 +6,10 @@ module.exports = (sequelize, DataTypes) => {
     'Course',
     {
       id: {
-        type: DataTypes.UUID,
-        defaultValue: UUIDV4, // auto-generate
-        primaryKey: true,
-      },
+  type: DataTypes.UUID,
+  defaultValue: DataTypes.UUIDV4,
+  primaryKey: true
+},
       title: {
         type: DataTypes.STRING,
         allowNull: false,
