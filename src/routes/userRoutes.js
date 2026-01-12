@@ -8,7 +8,6 @@ const { v4: uuidv4 } = require('uuid');
 const authenticateJWT = require('../middleware/auth.middleware');
 const { UserCourse, Course } = require('../../database/models');
 
-
 console.log('usersRoutes.js loaded'); // 🔹 Debug
 
 // Test route
@@ -57,47 +56,5 @@ router.post('/', async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-/* =====================================================
-   SUBSCRIBE TO COURSE (JWT PROTECTED)
-   POST /api/users/subscribe
-===================================================== */
-router.post('/subscribe', authenticateJWT, async (req, res) => {
-  try {
-    const { courseId } = req.body;
-    const userId = req.user.id;
-
-    if (!courseId) {
-      return res.status(400).json({
-        success: false,
-        message: 'courseId is required'
-      });
-    }
-
-    const course = await Course.findByPk(courseId);
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
-    }
-
-    await UserCourse.create({
-      userId,
-      courseId
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Course subscribed successfully'
-    });
-
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
-  }
-});
-
 
 module.exports = router;
