@@ -1,15 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const { Project } = require('../../database/models');
+const authMiddleware = require('../middleware/auth.middleware');
 
 /* =====================================================
-   GET ALL PROJECTS
-   GET /api/projects/
+   GET ALL PROJECTS (JWT PROTECTED)
+   GET /api/projects
 ===================================================== */
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
     const projects = await Project.findAll({
-      order: [['createdAt', 'DESC']], // latest projects first
+      order: [['created_at', 'DESC']], // snake_case (underscored: true)
     });
 
     res.status(200).json({
@@ -27,48 +28,97 @@ router.get('/', async (req, res) => {
 });
 
 /* =====================================================
-   CREATE NEW PROJECT
-   POST /api/projects/
+   GET SINGLE PROJECT BY project_id (UUID)
+   GET /api/projects/:project_id
 ===================================================== */
-router.post('/', async (req, res) => {
+router.get('/:project_id', authMiddleware, async (req, res) => {
+  try {
+    const { project_id } = req.params;
+
+    // basic UUID validation
+    if (!project_id || project_id.length !== 36) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid project_id format',
+      });
+    }
+
+    const project = await Project.findOne({
+      where: { project_id },
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: project,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching project',
+      error: error.message,
+    });
+  }
+});
+
+/* =====================================================
+   CREATE NEW PROJECT (JWT PROTECTED)
+   POST /api/projects
+===================================================== */
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const {
       project_name,
       client_name,
       project_status,
-      progress_percentage,
-      priority,
+      category,
+      sub_category,
       project_owner,
-      geography,
+      start_date_planned,
+      start_date_actual,
+      end_date_planned,
+      end_date_actual,
       total_budget,
       total_cost_to_date,
       total_revenue,
-      start_date,
-      end_date,
+      currency,
+      progress_percentage,
+      priority,
+      geography,
     } = req.body;
 
-    // Validate required fields
-    if (!project_name || !client_name) {
+    // Required validation
+    if (!project_name || !client_name || !project_owner) {
       return res.status(400).json({
         success: false,
-        message: 'Project name and client name are required',
+        message: 'Project name, client name, and project owner are required',
       });
     }
 
-    // Create the project (project_id is auto-generated)
     const newProject = await Project.create({
       project_name,
       client_name,
       project_status,
-      progress_percentage,
-      priority,
+      category,
+      sub_category,
       project_owner,
-      geography,
+      start_date_planned,
+      start_date_actual,
+      end_date_planned,
+      end_date_actual,
       total_budget,
       total_cost_to_date,
       total_revenue,
-      start_date,
-      end_date,
+      currency,
+      progress_percentage,
+      priority,
+      geography,
     });
 
     res.status(201).json({
@@ -84,5 +134,77 @@ router.post('/', async (req, res) => {
     });
   }
 });
+
+/* =====================================================
+   UPDATE PROJECT (ALL FIELDS)
+   PUT /api/projects/:project_id
+   Body: all project fields
+===================================================== */
+router.put('/:project_id', authMiddleware, async (req, res) => {
+  try {
+    const { project_id } = req.params;
+
+    // Find project
+    const project = await Project.findOne({ where: { project_id } });
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found',
+      });
+    }
+
+    // Update all fields dynamically
+    await project.update(req.body);
+
+    res.status(200).json({
+      success: true,
+      message: 'Project updated successfully',
+      data: project,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update project',
+      error: error.message,
+    });
+  }
+});
+/* =====================================================
+   DELETE A PROJECT (JWT PROTECTED)
+   DELETE /api/projects/:id
+===================================================== */
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the project first
+    const project = await Project.findByPk(id);
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    // Permanently delete the project
+    await project.destroy();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Project deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Delete Project Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Something went wrong while deleting the project'
+    });
+  }
+});
+
 
 module.exports = router;

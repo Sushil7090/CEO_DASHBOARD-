@@ -3,10 +3,12 @@ const router = express.Router();
 
 const authRoutes = require('./auth');
 const usersRoutes = require('./userRoutes');
-const projectRoutes = require('./project_routes'); // 👈 MUST MATCH FILE NAME
+const projectRoutes = require('./project_routes');
+const milestoneRoutes = require('./milestone_routes');
 
 router.use('/auth', authRoutes);
 router.use('/users', usersRoutes);
-router.use('/projects', projectRoutes); // 👈 MUST EXIST
+router.use('/projects', projectRoutes);
+router.use('/milestones', milestoneRoutes);
 
 module.exports = router;
