@@ -1,7 +1,33 @@
 const express = require('express'); 
 const router = express.Router();
-const { Milestone } = require('../../database/models'); // adjust path if needed
-const authMiddleware = require('../middleware/auth.middleware'); // optional JWT protection
+const { Milestone } = require('../../database/models');
+const authMiddleware = require('../middleware/auth.middleware');
+
+/**
+ * Detect a date-like field safely:
+ * - DATE type
+ * - STRING field containing "date", "due", "end", "deadline"
+ */
+const getDateField = () => {
+  const attrs = Milestone.rawAttributes;
+
+  for (const key in attrs) {
+    const type = attrs[key].type.key;
+    const name = key.toLowerCase();
+
+    if (
+      type === 'DATE' ||
+      (type === 'STRING' &&
+        (name.includes('date') ||
+         name.includes('due') ||
+         name.includes('end') ||
+         name.includes('deadline')))
+    ) {
+      return key;
+    }
+  }
+  return null;
+};
 
 // ==========================
 // CREATE NEW MILESTONE
@@ -10,12 +36,8 @@ const authMiddleware = require('../middleware/auth.middleware'); // optional JWT
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const milestone = await Milestone.create(req.body);
-    res.status(201).json({
-      success: true,
-      data: milestone
-    });
+    res.status(201).json({ success: true, data: milestone });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
       message: 'Failed to create milestone',
@@ -33,12 +55,8 @@ router.get('/', authMiddleware, async (req, res) => {
     const milestones = await Milestone.findAll({
       order: [['created_at', 'DESC']]
     });
-    res.json({
-      success: true,
-      data: milestones
-    });
+    res.json({ success: true, data: milestones });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch milestones',
@@ -58,15 +76,114 @@ router.get('/project/:projectId', authMiddleware, async (req, res) => {
       order: [['created_at', 'DESC']]
     });
 
-    res.json({
-      success: true,
-      data: milestones
-    });
+    res.json({ success: true, data: milestones });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch project milestones',
+      error: error.message
+    });
+  }
+});
+
+// =====================================================
+// GET MILESTONE STATISTICS
+// GET /api/milestones/stats
+// =====================================================
+router.get('/stats', authMiddleware, async (req, res) => {
+  try {
+    const milestones = await Milestone.findAll();
+
+    const total = milestones.length;
+
+    const completed = milestones.filter(
+      m => m.status && m.status.toLowerCase() === 'completed'
+    ).length;
+
+    const pending = milestones.filter(
+      m => !m.status || m.status.toLowerCase() === 'pending'
+    ).length;
+
+    const dateField = getDateField();
+    const now = new Date();
+
+    let overdue = 0;
+    if (dateField) {
+      overdue = milestones.filter(m => {
+        const rawDate = m[dateField];
+        if (!rawDate) return false;
+
+        const parsed = new Date(rawDate);
+        return !isNaN(parsed) && parsed < now;
+      }).length;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        total_milestones: total,
+        completed_milestones: completed,
+        pending_milestones: pending,
+        overdue_milestones: overdue
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch milestone statistics',
+      error: error.message
+    });
+  }
+});
+
+// =====================================================
+// GET OVERDUE MILESTONES
+// GET /api/milestones/overdue
+// =====================================================
+router.get('/overdue', authMiddleware, async (req, res) => {
+  try {
+    const dateField = getDateField();
+
+    if (!dateField) {
+      return res.status(400).json({
+        success: false,
+        message: 'No date-like field found in milestone model'
+      });
+    }
+
+    const milestones = await Milestone.findAll();
+    const now = new Date();
+
+    const overdue = milestones
+      .filter(m => {
+        const rawDate = m[dateField];
+        if (!rawDate) return false;
+
+        const parsed = new Date(rawDate);
+        return !isNaN(parsed) && parsed < now;
+      })
+      .map(m => {
+        const due = new Date(m[dateField]);
+        const daysOverdue = Math.floor(
+          (now - due) / (1000 * 60 * 60 * 24)
+        );
+
+        return {
+          ...m.toJSON(),
+          days_overdue: daysOverdue
+        };
+      })
+      .sort((a, b) => new Date(a[dateField]) - new Date(b[dateField]));
+
+    res.json({
+      success: true,
+      date_field_used: dateField,
+      data: overdue
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch overdue milestones',
       error: error.message
     });
   }
@@ -87,12 +204,8 @@ router.get('/:milestoneId', authMiddleware, async (req, res) => {
       });
     }
 
-    res.json({
-      success: true,
-      data: milestone
-    });
+    res.json({ success: true, data: milestone });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch milestone',
@@ -124,7 +237,6 @@ router.put('/:milestoneId', authMiddleware, async (req, res) => {
       data: milestone
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
       message: 'Failed to update milestone',
@@ -155,7 +267,6 @@ router.delete('/:milestoneId', authMiddleware, async (req, res) => {
       message: 'Milestone deleted successfully'
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
       message: 'Failed to delete milestone',
