@@ -1,146 +1,184 @@
-// routes/salesDeal_routes.js
-
 const express = require('express');
 const router = express.Router();
 const { SalesDeal } = require('../../database/models');
-const authMiddleware = require('../middleware/auth.middleware');
+const { Op } = require('sequelize');
+// const authMiddleware = require('../middleware/auth.middleware'); // optional
 
 /* =====================================================
-   CREATE SALES DEAL
+   1️⃣ CREATE NEW DEAL
    POST /api/sales-deals
 ===================================================== */
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const deal = await SalesDeal.create(req.body);
     res.status(201).json({ success: true, data: deal });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create sales deal',
-      error: error.message
-    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
 /* =====================================================
-   GET ALL SALES DEALS
-   GET /api/sales-deals
-   Optional filters:
-   ?pipeline_stage=&sales_rep_id=&project_id=&region=
+   2️⃣ GET ALL DEALS (Pipeline Filters)
+   GET /api/sales-deals?stage=Negotiation&status=Open
 ===================================================== */
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
+    const { stage, status } = req.query;
+
     const where = {};
-    const {
-      pipeline_stage,
-      sales_rep_id,
-      project_id,
-      region
-    } = req.query;
+    if (stage) where.pipeline_stage = stage;
+    if (status) where.deal_status = status;
 
-    if (pipeline_stage) where.pipeline_stage = pipeline_stage;
-    if (sales_rep_id) where.sales_rep_id = sales_rep_id;
-    if (project_id) where.project_id = project_id;
-    if (region) where.region = region;
+    const deals = await SalesDeal.findAll({ where });
+    res.json({ success: true, count: deals.length, data: deals });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 
+/* =====================================================
+   3️⃣ GET SINGLE DEAL
+   GET /api/sales-deals/:id
+===================================================== */
+router.get('/:id', async (req, res) => {
+  try {
+    const deal = await SalesDeal.findByPk(req.params.id);
+    if (!deal)
+      return res.status(404).json({ success: false, message: 'Deal not found' });
+
+    res.json({ success: true, data: deal });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/* =====================================================
+   4️⃣ UPDATE DEAL
+   PUT /api/sales-deals/:id
+===================================================== */
+router.put('/:id', async (req, res) => {
+  try {
+    const deal = await SalesDeal.findByPk(req.params.id);
+    if (!deal)
+      return res.status(404).json({ success: false, message: 'Deal not found' });
+
+    await deal.update(req.body);
+    res.json({ success: true, data: deal });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/* =====================================================
+   5️⃣ DELETE DEAL
+   DELETE /api/sales-deals/:id
+===================================================== */
+router.delete('/:id', async (req, res) => {
+  try {
+    const deleted = await SalesDeal.destroy({ where: { deal_id: req.params.id } });
+    if (!deleted)
+      return res.status(404).json({ success: false, message: 'Deal not found' });
+
+    res.json({ success: true, message: 'Deal deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/* =====================================================
+   7️⃣ MOVE TO NEXT PIPELINE STAGE
+   PATCH /api/sales-deals/:id/next-stage
+===================================================== */
+router.patch('/:id/next-stage', async (req, res) => {
+  try {
+    const stages = ['Lead', 'Qualified', 'Proposal', 'Negotiation', 'Won'];
+    const deal = await SalesDeal.findByPk(req.params.id);
+
+    if (!deal)
+      return res.status(404).json({ success: false, message: 'Deal not found' });
+
+    const currentIndex = stages.indexOf(deal.pipeline_stage);
+    if (currentIndex === -1 || currentIndex === stages.length - 1)
+      return res.status(400).json({ success: false, message: 'Already at final stage' });
+
+    deal.pipeline_stage = stages[currentIndex + 1];
+    await deal.save();
+
+    res.json({ success: true, data: deal });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/* =====================================================
+   8️⃣ DEALS BY SALES REP
+   GET /api/sales-deals/sales-rep/:sales_rep_id
+===================================================== */
+router.get('/sales-rep/:sales_rep_id', async (req, res) => {
+  try {
     const deals = await SalesDeal.findAll({
-      where,
-      order: [['created_at', 'DESC']]
+      where: { sales_rep_id: req.params.sales_rep_id }
     });
 
     res.json({ success: true, count: deals.length, data: deals });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch sales deals',
-      error: error.message
-    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
 /* =====================================================
-   GET SINGLE SALES DEAL BY ID
-   GET /api/sales-deals/:deal_id
+   9️⃣ WIN / LOSS ANALYSIS
+   GET /api/sales-deals/analysis/win-loss
 ===================================================== */
-router.get('/:deal_id', authMiddleware, async (req, res) => {
+router.get('/analysis/win-loss', async (req, res) => {
   try {
-    const deal = await SalesDeal.findByPk(req.params.deal_id);
+    const WON_STAGE = 'Negotiation';
 
-    if (!deal) {
-      return res.status(404).json({
-        success: false,
-        message: 'Sales deal not found'
-      });
-    }
-
-    res.json({ success: true, data: deal });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch sales deal',
-      error: error.message
+    const won = await SalesDeal.count({
+      where: { pipeline_stage: WON_STAGE }
     });
-  }
-});
 
-/* =====================================================
-   UPDATE SALES DEAL
-   PUT /api/sales-deals/:deal_id
-===================================================== */
-router.put('/:deal_id', authMiddleware, async (req, res) => {
-  try {
-    const deal = await SalesDeal.findByPk(req.params.deal_id);
+    const total = await SalesDeal.count();
 
-    if (!deal) {
-      return res.status(404).json({
-        success: false,
-        message: 'Sales deal not found'
-      });
-    }
-
-    await deal.update(req.body);
+    const lost = total - won;
 
     res.json({
       success: true,
-      message: 'Sales deal updated successfully',
-      data: deal
+      data: {
+        total_deals: total,
+        won,
+        lost,
+        win_rate: total
+          ? ((won / total) * 100).toFixed(2) + '%'
+          : '0%'
+      }
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update sales deal',
-      error: error.message
-    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
+
 /* =====================================================
-   DELETE SALES DEAL
-   DELETE /api/sales-deals/:deal_id
+   🔟 SEARCH DEALS
+   GET /api/sales-deals/search?q=CRM
 ===================================================== */
-router.delete('/:deal_id', authMiddleware, async (req, res) => {
+router.get('/search/query', async (req, res) => {
   try {
-    const deal = await SalesDeal.findByPk(req.params.deal_id);
+    const { q } = req.query;
 
-    if (!deal) {
-      return res.status(404).json({
-        success: false,
-        message: 'Sales deal not found'
-      });
-    }
-
-    await deal.destroy();
-
-    res.json({
-      success: true,
-      message: 'Sales deal deleted successfully'
+    const deals = await SalesDeal.findAll({
+      where: {
+        [Op.or]: [
+          { deal_name: { [Op.like]: `%${q}%` } },
+          { client_name: { [Op.like]: `%${q}%` } }
+        ]
+      }
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete sales deal',
-      error: error.message
-    });
+
+    res.json({ success: true, count: deals.length, data: deals });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
