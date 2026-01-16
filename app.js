@@ -8,15 +8,9 @@ const authenticateJWT = require('./src/middleware/auth.middleware');
 
 app.use(express.json());
 
-/**
- * PUBLIC ROUTES
- */
-app.use('/api', routes);   // <-- IMPORTANT FIX
+// PUBLIC ROUTES
 
-/**
- * OPTIONAL: Protect specific routes INSIDE route files
- * (recommended instead of global protection)
- */
+app.use('/api', routes);   
 
 // DB connection
 db.sequelize.authenticate()

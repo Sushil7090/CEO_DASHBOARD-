@@ -2,12 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { SalesDeal } = require('../../database/models');
 const { Op } = require('sequelize');
-// const authMiddleware = require('../middleware/auth.middleware'); // optional
-
-/* =====================================================
-   1️⃣ CREATE NEW DEAL
-   POST /api/sales-deals
-===================================================== */
+   //CREATE NEW DEAL
+   //POST /api/sales-deals
 router.post('/', async (req, res) => {
   try {
     const deal = await SalesDeal.create(req.body);
@@ -17,10 +13,9 @@ router.post('/', async (req, res) => {
   }
 });
 
-/* =====================================================
-   2️⃣ GET ALL DEALS (Pipeline Filters)
-   GET /api/sales-deals?stage=Negotiation&status=Open
-===================================================== */
+  //GET ALL DEALS (Pipeline Filters)
+//   GET /api/sales-deals?stage=Negotiation&status=Open
+
 router.get('/', async (req, res) => {
   try {
     const { stage, status } = req.query;
@@ -36,10 +31,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-/* =====================================================
-   3️⃣ GET SINGLE DEAL
-   GET /api/sales-deals/:id
-===================================================== */
+   // GET SINGLE DEAL
+  // GET /api/sales-deals/:id
 router.get('/:id', async (req, res) => {
   try {
     const deal = await SalesDeal.findByPk(req.params.id);
@@ -52,10 +45,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-/* =====================================================
-   4️⃣ UPDATE DEAL
-   PUT /api/sales-deals/:id
-===================================================== */
+   //UPDATE DEAL
+   //PUT /api/sales-deals/:id
 router.put('/:id', async (req, res) => {
   try {
     const deal = await SalesDeal.findByPk(req.params.id);
@@ -69,10 +60,8 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-/* =====================================================
-   5️⃣ DELETE DEAL
-   DELETE /api/sales-deals/:id
-===================================================== */
+   // DELETE DEAL
+   //DELETE /api/sales-deals/:id
 router.delete('/:id', async (req, res) => {
   try {
     const deleted = await SalesDeal.destroy({ where: { deal_id: req.params.id } });
@@ -85,10 +74,8 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-/* =====================================================
-   7️⃣ MOVE TO NEXT PIPELINE STAGE
-   PATCH /api/sales-deals/:id/next-stage
-===================================================== */
+   //MOVE TO NEXT PIPELINE STAGE
+   //PATCH /api/sales-deals/:id/next-stage
 router.patch('/:id/next-stage', async (req, res) => {
   try {
     const stages = ['Lead', 'Qualified', 'Proposal', 'Negotiation', 'Won'];
@@ -110,10 +97,8 @@ router.patch('/:id/next-stage', async (req, res) => {
   }
 });
 
-/* =====================================================
-   8️⃣ DEALS BY SALES REP
-   GET /api/sales-deals/sales-rep/:sales_rep_id
-===================================================== */
+   // DEALS BY SALES REP
+   //GET /api/sales-deals/sales-rep/:sales_rep_id
 router.get('/sales-rep/:sales_rep_id', async (req, res) => {
   try {
     const deals = await SalesDeal.findAll({
@@ -126,10 +111,8 @@ router.get('/sales-rep/:sales_rep_id', async (req, res) => {
   }
 });
 
-/* =====================================================
-   9️⃣ WIN / LOSS ANALYSIS
-   GET /api/sales-deals/analysis/win-loss
-===================================================== */
+   //WIN / LOSS ANALYSIS
+   //GET /api/sales-deals/analysis/win-loss
 router.get('/analysis/win-loss', async (req, res) => {
   try {
     const WON_STAGE = 'Negotiation';
@@ -158,11 +141,8 @@ router.get('/analysis/win-loss', async (req, res) => {
   }
 });
 
-
-/* =====================================================
-   🔟 SEARCH DEALS
-   GET /api/sales-deals/search?q=CRM
-===================================================== */
+   //SEARCH DEALS
+   //GET /api/sales-deals/search?q=CRM
 router.get('/search/query', async (req, res) => {
   try {
     const { q } = req.query;

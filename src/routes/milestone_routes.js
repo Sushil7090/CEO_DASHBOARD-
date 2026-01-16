@@ -28,11 +28,8 @@ const getDateField = () => {
   }
   return null;
 };
-
-// ==========================
 // CREATE NEW MILESTONE
 // POST /api/milestones
-// ==========================
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const milestone = await Milestone.create(req.body);
@@ -46,10 +43,8 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
-// ==========================
 // GET ALL MILESTONES
 // GET /api/milestones
-// ==========================
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const milestones = await Milestone.findAll({
@@ -65,10 +60,8 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// ==========================
 // GET MILESTONES BY PROJECT
 // GET /api/milestones/project/:projectId
-// ==========================
 router.get('/project/:projectId', authMiddleware, async (req, res) => {
   try {
     const milestones = await Milestone.findAll({
@@ -86,10 +79,8 @@ router.get('/project/:projectId', authMiddleware, async (req, res) => {
   }
 });
 
-// =====================================================
 // GET MILESTONE STATISTICS
 // GET /api/milestones/stats
-// =====================================================
 router.get('/stats', authMiddleware, async (req, res) => {
   try {
     const milestones = await Milestone.findAll();
@@ -135,11 +126,8 @@ router.get('/stats', authMiddleware, async (req, res) => {
     });
   }
 });
-
-// =====================================================
 // GET OVERDUE MILESTONES
 // GET /api/milestones/overdue
-// =====================================================
 router.get('/overdue', authMiddleware, async (req, res) => {
   try {
     const dateField = getDateField();
@@ -188,11 +176,8 @@ router.get('/overdue', authMiddleware, async (req, res) => {
     });
   }
 });
-
-// ==========================
 // GET SINGLE MILESTONE
 // GET /api/milestones/:milestoneId
-// ==========================
 router.get('/:milestoneId', authMiddleware, async (req, res) => {
   try {
     const milestone = await Milestone.findByPk(req.params.milestoneId);
@@ -214,10 +199,8 @@ router.get('/:milestoneId', authMiddleware, async (req, res) => {
   }
 });
 
-// ==========================
 // UPDATE MILESTONE
 // PUT /api/milestones/:milestoneId
-// ==========================
 router.put('/:milestoneId', authMiddleware, async (req, res) => {
   try {
     const milestone = await Milestone.findByPk(req.params.milestoneId);
@@ -244,11 +227,8 @@ router.put('/:milestoneId', authMiddleware, async (req, res) => {
     });
   }
 });
-
-// ==========================
 // DELETE MILESTONE
 // DELETE /api/milestones/:milestoneId
-// ==========================
 router.delete('/:milestoneId', authMiddleware, async (req, res) => {
   try {
     const milestone = await Milestone.findByPk(req.params.milestoneId);

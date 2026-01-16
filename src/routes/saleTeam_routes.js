@@ -3,10 +3,8 @@ const router = express.Router();
 const { SalesTeam } = require('../../database/models');
 const authMiddleware = require('../middleware/auth.middleware');
 
-/* =====================================================
-   1. CREATE SALES TEAM MEMBER
-   POST /api/sales-team
-===================================================== */
+   //CREATE SALES TEAM MEMBER
+   //POST /api/sales-team
 router.post('/', authMiddleware, async (req, res) => {
     try {
         const {
@@ -64,10 +62,8 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 });
 
-/* =====================================================
-   2. GET ALL SALES TEAM MEMBERS
-   GET /api/sales-team
-===================================================== */
+   //GET ALL SALES TEAM MEMBERS
+   //GET /api/sales-team
 router.get('/', authMiddleware, async (req, res) => {
     try {
         const members = await SalesTeam.findAll({
@@ -79,10 +75,8 @@ router.get('/', authMiddleware, async (req, res) => {
     }
 });
 
-/* =====================================================
-   3. GET SINGLE SALES TEAM MEMBER
-   GET /api/sales-team/:id
-===================================================== */
+   //GET SINGLE SALES TEAM MEMBER
+   //GET /api/sales-team/:id
 router.get('/:id', authMiddleware, async (req, res) => {
     try {
         const member = await SalesTeam.findByPk(req.params.id);
@@ -98,10 +92,8 @@ router.get('/:id', authMiddleware, async (req, res) => {
     }
 });
 
-/* =====================================================
-   4. UPDATE SALES TEAM MEMBER
-   PUT /api/sales-team/:id
-===================================================== */
+   //UPDATE SALES TEAM MEMBER
+   //PUT /api/sales-team/:id
 router.put('/:id', authMiddleware, async (req, res) => {
     try {
         const member = await SalesTeam.findByPk(req.params.id);
@@ -119,10 +111,8 @@ router.put('/:id', authMiddleware, async (req, res) => {
     }
 });
 
-/* =====================================================
-   5. DELETE SALES TEAM MEMBER
-   DELETE /api/sales-team/:id
-===================================================== */
+   //DELETE SALES TEAM MEMBER
+   //DELETE /api/sales-team/:id
 router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         const member = await SalesTeam.findByPk(req.params.id);
@@ -143,10 +133,8 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     }
 });
 
-/* =====================================================
-   6. GET TEAM HIERARCHY (Lead → Members)
-   GET /api/sales-team/hierarchy/:leadId
-===================================================== */
+   //GET TEAM HIERARCHY (Lead → Members)
+   //GET /api/sales-team/hierarchy/:leadId
 router.get('/hierarchy/:leadId', authMiddleware, async (req, res) => {
     try {
         const lead = await SalesTeam.findByPk(req.params.leadId);
@@ -173,10 +161,9 @@ router.get('/hierarchy/:leadId', authMiddleware, async (req, res) => {
     }
 });
 
-/* =====================================================
-   7. TEAM PERFORMANCE STATS
-   GET /api/sales-team/stats
-===================================================== */
+ // TEAM PERFORMANCE STATS
+   //GET /api/sales-team/stats
+
 router.get('/stats/performance', authMiddleware, async (req, res) => {
     try {
         const totalMembers = await SalesTeam.count();

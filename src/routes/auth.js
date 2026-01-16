@@ -63,14 +63,10 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-/* =====================================================
-   LOGIN ROUTE (JWT ADDED)
-===================================================== */
+  // LOGIN ROUTE (JWT ADDED)
+// POST /api/auth/login
+ //Body: { email, password }
 
-/**
- * POST /api/auth/login
- * Body: { email, password }
- */
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;

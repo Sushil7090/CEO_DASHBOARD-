@@ -1,13 +1,9 @@
 const express = require('express');
 const router = express.Router();
-
 const { SalesActivity } = require('../../database/models');
-// const verifyToken = require('../middleware/authMiddleware'); // optional
 
-// ==================================================
-// 1️⃣ Create / Log Activity
+// Create / Log Activity
 // POST /api/sales-activities
-// ==================================================
 router.post('/', /* verifyToken, */ async (req, res) => {
   try {
     const activity = await SalesActivity.create(req.body);
@@ -26,10 +22,8 @@ router.post('/', /* verifyToken, */ async (req, res) => {
   }
 });
 
-// ==================================================
-// 2️⃣ Get All Activities for a Deal
+// Get All Activities for a Deal
 // GET /api/sales-activities/deal/:deal_id
-// ==================================================
 router.get('/deal/:deal_id', /* verifyToken, */ async (req, res) => {
   try {
     const { deal_id } = req.params;
@@ -52,10 +46,9 @@ router.get('/deal/:deal_id', /* verifyToken, */ async (req, res) => {
   }
 });
 
-// ==================================================
-// 3️⃣ Get Activities by Sales Rep
+
+// Get Activities by Sales Rep
 // GET /api/sales-activities/sales-rep/:sales_rep_id
-// ==================================================
 router.get('/sales-rep/:sales_rep_id', /* verifyToken, */ async (req, res) => {
   try {
     const { sales_rep_id } = req.params;
@@ -78,10 +71,8 @@ router.get('/sales-rep/:sales_rep_id', /* verifyToken, */ async (req, res) => {
   }
 });
 
-// ==================================================
-// 4️⃣ Get Single Activity
+//  Get Single Activity
 // GET /api/sales-activities/:activity_id
-// ==================================================
 router.get('/:activity_id', /* verifyToken, */ async (req, res) => {
   try {
     const { activity_id } = req.params;
@@ -107,11 +98,8 @@ router.get('/:activity_id', /* verifyToken, */ async (req, res) => {
     });
   }
 });
-
-// ==================================================
-// 5️⃣ Update Activity
+// Update Activity
 // PUT /api/sales-activities/:activity_id
-// ==================================================
 router.put('/:activity_id', /* verifyToken, */ async (req, res) => {
   try {
     const { activity_id } = req.params;
@@ -143,10 +131,8 @@ router.put('/:activity_id', /* verifyToken, */ async (req, res) => {
   }
 });
 
-// ==================================================
-// 6️⃣ Delete Activity
+//  Delete Activity
 // DELETE /api/sales-activities/:activity_id
-// ==================================================
 router.delete('/:activity_id', /* verifyToken, */ async (req, res) => {
   try {
     const { activity_id } = req.params;
@@ -174,11 +160,9 @@ router.delete('/:activity_id', /* verifyToken, */ async (req, res) => {
     });
   }
 });
-
-// ==================================================
-// 7️⃣ Activity Timeline (Deal-based)
+//  Activity Timeline (Deal-based)
 // GET /api/sales-activities/timeline/:deal_id
-// ==================================================
+
 router.get('/timeline/:deal_id', /* verifyToken, */ async (req, res) => {
   try {
     const { deal_id } = req.params;

@@ -5,16 +5,19 @@ const authRoutes = require('./auth');
 const usersRoutes = require('./userRoutes');
 const projectRoutes = require('./project_routes');
 const milestoneRoutes = require('./milestone_routes');
-const saleTeamRoutes = require('./saleTeam_routes'); // ✅ Updated file name
+const saleTeamRoutes = require('./saleTeam_routes'); 
 const saleDealRoutes = require('./saleDeal_routes');
-const saleActivityRoutes = require('./saleActivity_routes'); // ✅ Added
-
+const saleActivityRoutes = require('./saleActivity_routes'); 
+const invoiceRoutes = require('./invoiceTable_routes');
+const expenseRoutes = require('./expenseTable_routes');
 router.use('/auth', authRoutes);
 router.use('/users', usersRoutes);
 router.use('/projects', projectRoutes);
-router.use('/milestones', milestoneRoutes);
-router.use('/sales-team', saleTeamRoutes); // ✅ Added
+router.use('/milestones', milestoneRoutes);router.use('/invoices', invoiceRoutes);
+router.use('/sales-team', saleTeamRoutes); 
 router.use('/sales-deal', saleDealRoutes);
-router.use('/sales-activities', saleActivityRoutes); // ✅ Added
+router.use('/sales-activities', saleActivityRoutes); 
+router.use('/invoices', invoiceRoutes);
+router.use('/expenses', expenseRoutes);
 
 module.exports = router;

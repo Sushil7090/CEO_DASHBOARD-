@@ -2,11 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { Project } = require('../../database/models');
 const authMiddleware = require('../middleware/auth.middleware');
-
-/* =====================================================
-   GET ALL PROJECTS (JWT PROTECTED)
-   GET /api/projects
-===================================================== */
+  // GET ALL PROJECTS (JWT PROTECTED)
+   //GET /api/projects
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const projects = await Project.findAll({
@@ -26,11 +23,8 @@ router.get('/', authMiddleware, async (req, res) => {
     });
   }
 });
-
-/* =====================================================
-   GET SINGLE PROJECT BY project_id (UUID)
-   GET /api/projects/:project_id
-===================================================== */
+   //GET SINGLE PROJECT BY project_id (UUID)
+   //GET /api/projects/:project_id
 router.get('/:project_id', authMiddleware, async (req, res) => {
   try {
     const { project_id } = req.params;
@@ -67,10 +61,8 @@ router.get('/:project_id', authMiddleware, async (req, res) => {
   }
 });
 
-/* =====================================================
-   CREATE NEW PROJECT (JWT PROTECTED)
-   POST /api/projects
-===================================================== */
+   //CREATE NEW PROJECT (JWT PROTECTED)
+   //POST /api/projects
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const {
@@ -134,12 +126,9 @@ router.post('/', authMiddleware, async (req, res) => {
     });
   }
 });
-
-/* =====================================================
-   UPDATE PROJECT (ALL FIELDS)
-   PUT /api/projects/:project_id
-   Body: all project fields
-===================================================== */
+   //UPDATE PROJECT (ALL FIELDS)
+   //PUT /api/projects/:project_id
+   //Body: all project fields
 router.put('/:project_id', authMiddleware, async (req, res) => {
   try {
     const { project_id } = req.params;
@@ -171,10 +160,8 @@ router.put('/:project_id', authMiddleware, async (req, res) => {
     });
   }
 });
-/* =====================================================
-   DELETE A PROJECT (JWT PROTECTED)
-   DELETE /api/projects/:id
-===================================================== */
+   //DELETE A PROJECT (JWT PROTECTED)
+   //DELETE /api/projects/:id
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
