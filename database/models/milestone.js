@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
     },
 
     project_id: {
-      type: DataTypes.UUID, // ✅ UPDATED
+      type: DataTypes.UUID,
       allowNull: false
     },
 

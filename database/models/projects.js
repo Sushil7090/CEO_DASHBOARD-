@@ -27,7 +27,7 @@ module.exports = (sequelize, DataTypes) => {
           'In Progress',
           'Completed',
           'On Hold',
-          'Cancelled'
+          'Cancelled',
         ),
         allowNull: false,
         defaultValue: 'In Progress',
@@ -51,25 +51,27 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
 
-      start_date_planned: {
-        type: DataTypes.DATEONLY,
-        allowNull: true,
-      },
+     start_date_planned: {
+  type: DataTypes.DATE,
+  allowNull: true,       // can remain null if unknown
+  defaultValue: null     // optional, explicit
+},
+start_date_actual: {
+  type: DataTypes.DATE,
+  allowNull: true,
+  defaultValue: null
+},
+end_date_planned: {
+  type: DataTypes.DATE,
+  allowNull: true,
+  defaultValue: null
+},
+end_date_actual: {
+  type: DataTypes.DATE,
+  allowNull: true,
+  defaultValue: null
+},
 
-      start_date_actual: {
-        type: DataTypes.DATEONLY,
-        allowNull: true,
-      },
-
-      end_date_planned: {
-        type: DataTypes.DATEONLY,
-        allowNull: true,
-      },
-
-      end_date_actual: {
-        type: DataTypes.DATEONLY,
-        allowNull: true,
-      },
 
       total_budget: {
         type: DataTypes.DECIMAL(15, 2),

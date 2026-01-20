@@ -59,7 +59,5 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true,
     }
   );
-
-  // ❌ NO associations, NO foreign keys
   return SalesActivity;
 };

@@ -88,7 +88,9 @@ module.exports = (sequelize, DataTypes) => {
           'Proposal',
           'Negotiation',
           'Closed Won',
-          'Closed Lost'
+          'Closed Lost',
+          'won',
+          'lost'
         ),
         allowNull: false
       },
