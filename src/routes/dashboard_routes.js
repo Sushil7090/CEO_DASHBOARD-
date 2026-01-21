@@ -3,55 +3,79 @@ const router = express.Router();
 const { Project, SalesDeal, Invoice, Expense, SalesTeam } =
   require('../../database/models');
 
-/* =================================================
-  API 1: DASHBOARD OVERVIEW
-================================================= */
+ //  1: DASHBOARD OVERVIEW
 router.get('/overview', async (req, res) => {
   try {
-    const projects = await Project.findAll();
-    const deals = await SalesDeal.findAll();
-    const invoices = await Invoice.findAll();
-    const reps = await SalesTeam.findAll({ where: { is_active: true } });
-
-    let totalRevenue = 0, totalCost = 0, totalBudget = 0;
-
-    projects.forEach(p => {
-      totalRevenue += p.total_revenue || 0;
-      totalCost += p.total_cost_to_date || 0;
-      totalBudget += p.total_budget || 0;
+    const projects = await Project.findAll({ raw: true });
+    const deals = await SalesDeal.findAll({ raw: true });
+    const invoices = await Invoice.findAll({ raw: true });
+    const reps = await SalesTeam.findAll({
+      where: { is_active: true },
+      raw: true
     });
 
-    const totalProfit = totalRevenue - totalCost;
-    const roi = totalCost ? ((totalProfit / totalCost) * 100).toFixed(2) : 0;
+    //HARD FORCE NUMBER (NO STRING SURVIVES)
+    const forceNumber = (v) => {
+      if (v === null || v === undefined) return 0;
+      if (typeof v === 'number') return v;
+      if (typeof v === 'string') {
+        const n = parseFloat(v);
+        return isNaN(n) ? 0 : n;
+      }
+      return 0;
+    };
 
+    let totalRevenue = 0;
+    let totalCost = 0;
+    let totalBudget = 0;
+
+    for (const p of projects) {
+      totalRevenue = forceNumber(totalRevenue) + forceNumber(p.total_revenue);
+      totalCost    = forceNumber(totalCost)    + forceNumber(p.total_cost_to_date);
+      totalBudget  = forceNumber(totalBudget)  + forceNumber(p.total_budget);
+    }
+    const totalProfit = forceNumber(totalRevenue) - forceNumber(totalCost);
+
+    const averageROI =
+      totalCost > 0
+        ? Number(((totalProfit / totalCost) * 100).toFixed(2))
+        : 0;
+
+    // SALES 
     const totalDeals = deals.length;
     const wonDeals = deals.filter(d => d.pipeline_stage === 'Closed Won').length;
     const activeDeals = deals.filter(
       d => !['Closed Won', 'Closed Lost'].includes(d.pipeline_stage)
     ).length;
 
+    //  INVOICES 
     const pendingInvoices = invoices.filter(i =>
       ['Sent', 'Viewed'].includes(i.invoice_status)
     ).length;
 
-    const overdueInvoices = invoices.filter(i =>
-      i.invoice_status === 'Overdue'
+    const overdueInvoices = invoices.filter(
+      i => i.invoice_status === 'Overdue'
     ).length;
 
-    res.json({
+    //  RESPONSE
+    return res.json({
       success: true,
       data: {
         projects: {
           total: projects.length,
-          in_progress: projects.filter(p => p.project_status === 'In Progress').length,
-          completed: projects.filter(p => p.project_status === 'Completed').length
+          in_progress: projects.filter(
+            p => p.project_status === 'In Progress'
+          ).length,
+          completed: projects.filter(
+            p => p.project_status === 'Completed'
+          ).length
         },
         financial: {
-          total_revenue: totalRevenue,
-          total_cost: totalCost,
-          total_profit: totalProfit,
-          total_budget: totalBudget,
-          average_roi: roi,
+          total_revenue: Number(totalRevenue.toFixed(2)),
+          total_cost: Number(totalCost.toFixed(2)),
+          total_budget: Number(totalBudget.toFixed(2)),
+          total_profit: Number(totalProfit.toFixed(2)), // 🔥 NEVER NULL
+          average_roi: averageROI,                      // 🔥 NEVER NaN
           currency: 'INR'
         },
         sales: {
@@ -68,23 +92,25 @@ router.get('/overview', async (req, res) => {
         }
       }
     });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error('Dashboard Overview Error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal Server Error'
+    });
   }
 });
 
-/* =================================================
-  API 2: FINANCIAL SUMMARY
-================================================= */
+ // 2: FINANCIAL SUMMARY 
 router.get('/financial-summary', async (req, res) => {
   try {
     const projects = await Project.findAll();
     const invoices = await Invoice.findAll();
     const expenses = await Expense.findAll();
 
-    /* =========================
-       PROJECT TOTALS
-    ========================= */
+       //PROJECT TOTALS
+
     let total_budget = 0;
     let total_cost = 0;
     let total_revenue = 0;
@@ -131,9 +157,8 @@ router.get('/financial-summary', async (req, res) => {
       ? ((total_cost / total_budget) * 100).toFixed(2)
       : 0;
 
-    /* =========================
-       INVOICES
-    ========================= */
+       //INVOICES
+
     let total_invoiced = 0;
     let total_paid = 0;
     let total_pending = 0;
@@ -149,9 +174,7 @@ router.get('/financial-summary', async (req, res) => {
       }
     });
 
-    /* =========================
-       EXPENSES
-    ========================= */
+      // EXPENSES
     let total_expenses = 0;
     let expense_by_category = {};
 
@@ -167,9 +190,8 @@ router.get('/financial-summary', async (req, res) => {
       expense_by_category[category] += amount;
     });
 
-    /* =========================
-       FINAL RESPONSE
-    ========================= */
+       //FINAL RESPONSE
+
     res.json({
       success: true,
       data: {
@@ -202,9 +224,7 @@ router.get('/financial-summary', async (req, res) => {
 });
 
 
-/* =================================================
-  API 3: SALES FUNNEL
-================================================= */
+ //3: SALES FUNNEL
 router.get('/sales-funnel', async (req, res) => {
   try {
     const deals = await SalesDeal.findAll();
@@ -224,48 +244,36 @@ router.get('/sales-funnel', async (req, res) => {
       const category = d.category || 'Unknown';
       const region = d.region || 'Unknown';
 
-      /* ======================
-         PIPELINE
-      ====================== */
+         //PIPELINE
+      
       if (!pipeline[stage]) {
         pipeline[stage] = { count: 0, value: 0 };
       }
       pipeline[stage].count++;
       pipeline[stage].value += value;
 
-      /* ======================
-         TOTAL DEAL VALUE
-      ====================== */
+        // TOTAL DEAL VALUE
+    
       totalValue += value;
 
-      /* ======================
-         WIN / LOSS RULE
-         WIN = Proposal
-         LOSS = Negotiation
-      ====================== */
       if (stage === 'Proposal') winValue += value;
       if (stage === 'Negotiation') lossValue += value;
 
-      /* ======================
-         EXPECTED REVENUE
-         Lead + Qualified
-      ====================== */
+        // EXPECTED REVENUE
+        // Lead + Qualified
       if (['Lead', 'Qualified'].includes(stage)) {
         expectedRevenue += value;
       }
 
-      /* ======================
-         BY CATEGORY
-      ====================== */
+  
+      // BY CATEGORY
       if (!by_category[category]) {
         by_category[category] = { count: 0, value: 0 };
       }
       by_category[category].count++;
       by_category[category].value += value;
 
-      /* ======================
-         BY REGION
-      ====================== */
+        // BY REGION
       if (!by_region[region]) {
         by_region[region] = { count: 0, value: 0 };
       }
@@ -273,9 +281,7 @@ router.get('/sales-funnel', async (req, res) => {
       by_region[region].value += value;
     });
 
-    /* ======================
-       METRICS
-    ====================== */
+       //METRICS
     const metrics = {
       total_deals_value: totalValue,
       won_deals_value: winValue,
@@ -288,9 +294,7 @@ router.get('/sales-funnel', async (req, res) => {
       expected_revenue: expectedRevenue
     };
 
-    /* ======================
-       FINAL RESPONSE
-    ====================== */
+       //FINAL RESPONSE   
     res.json({
       success: true,
       data: {
@@ -309,18 +313,14 @@ router.get('/sales-funnel', async (req, res) => {
   }
 });
 
-/* =================================================
-  API 4: TEAM PERFORMANCE
-================================================= */
+ //  4:TEAM PERFORMANCE
 router.get('/team-performance', async (req, res) => {
   try {
 
     const reps = await SalesTeam.findAll({ where: { is_active: true } });
     const deals = await SalesDeal.findAll();   // 🔥 FIXED
 
-    /* =========================
-       TOP PERFORMERS
-    ========================= */
+       //TOP PERFORMERS
     let top_performers = [];
     let totalRevenue = 0;
 
@@ -348,9 +348,7 @@ router.get('/team-performance', async (req, res) => {
 
     top_performers.sort((a, b) => b.total_revenue - a.total_revenue);
 
-    /* =========================
-       TARGET ACHIEVEMENT
-    ========================= */
+      // TARGET ACHIEVEMENT
     const target_achievement = {
       monthly: {
         total_target: 1000000,
@@ -375,9 +373,7 @@ router.get('/team-performance', async (req, res) => {
       }
     };
 
-    /* =========================
-       BY REGION
-    ========================= */
+       //BY REGION
     let by_region = {};
 
     deals.forEach(d => {
@@ -397,9 +393,7 @@ router.get('/team-performance', async (req, res) => {
         : 0;
     });
 
-    /* =========================
-       BY CATEGORY
-    ========================= */
+      // BY CATEGORY
     let by_category = {};
 
     deals.forEach(d => {
@@ -419,9 +413,7 @@ router.get('/team-performance', async (req, res) => {
         : 0;
     });
 
-    /* =========================
-       TEAM METRICS
-    ========================= */
+       //TEAM METRICS
     const team_metrics = {
       average_deal_size_per_rep: reps.length
         ? (totalRevenue / reps.length).toFixed(2)
@@ -429,9 +421,7 @@ router.get('/team-performance', async (req, res) => {
       average_days_in_pipeline: 30
     };
 
-    /* =========================
-       FINAL RESPONSE
-    ========================= */
+      // FINAL RESPONSE
     res.json({
       success: true,
       data: {
@@ -451,10 +441,7 @@ router.get('/team-performance', async (req, res) => {
   }
 });
 
-
-/* =================================================
-  API 5: PROJECT HEALTH
-================================================= */
+  //5:PROJECT HEALTH
 router.get('/project-health', async (req, res) => {
   try {
 
@@ -481,9 +468,7 @@ router.get('/project-health', async (req, res) => {
       const progress = Number(p.progress_percentage || 0);
       const project_status = p.project_status || 'Unknown';
 
-      /* =========================
-         TIMELINE STATUS
-      ========================= */
+        // TIMELINE STATUS
       if (p.end_date_actual && p.end_date_planned) {
         const delay_days =
           (new Date(p.end_date_actual) - new Date(p.end_date_planned)) /
@@ -496,9 +481,7 @@ router.get('/project-health', async (req, res) => {
           total_delay_days += delay_days;
         }
 
-        /* =========================
-           AT RISK PROJECTS
-        ========================= */
+          // AT RISK PROJECTS
         if (delay_days > 0 || cost > budget || progress < 40) {
           at_risk_projects.push({
             project_id: p.project_id,
@@ -512,23 +495,17 @@ router.get('/project-health', async (req, res) => {
         }
       }
 
-      /* =========================
-         BUDGET STATUS
-      ========================= */
+         //BUDGET STATUS
       if (cost < budget) under_budget++;
       else if (cost === budget) on_budget++;
       else over_budget++;
 
-      /* =========================
-         PROGRESS METRICS
-      ========================= */
+       //  PROGRESS METRICS
       total_progress += progress;
       if (progress >= 90) near_completion++;
       if (progress < 30) needs_attention++;
 
-      /* =========================
-         STATUS DISTRIBUTION
-      ========================= */
+         //STATUS DISTRIBUTION
       if (!status_distribution[project_status]) {
         status_distribution[project_status] = 0;
       }
@@ -543,9 +520,8 @@ router.get('/project-health', async (req, res) => {
       ? (total_progress / projects.length).toFixed(2)
       : 0;
 
-    /* =========================
-       FINAL RESPONSE
-    ========================= */
+
+      // FINAL RESPONSE
     res.json({
       success: true,
       data: {
@@ -577,9 +553,7 @@ router.get('/project-health', async (req, res) => {
   }
 });
 
-/* =================================================
-  API 6: PAYMENT STATUS
-================================================= */
+  //6:PAYMENT STATUS
 router.get('/payment-status', async (req, res) => {
   try {
 
@@ -609,26 +583,20 @@ router.get('/payment-status', async (req, res) => {
       const status = i.invoice_status || 'Unknown';
       const dueDate = i.due_date ? new Date(i.due_date) : null;
 
-      /* =========================
-         BY STATUS
-      ========================= */
+         //BY STATUS
       if (!by_status[status]) {
         by_status[status] = { count: 0, amount: 0 };
       }
       by_status[status].count++;
       by_status[status].amount += amount;
 
-      /* =========================
-         PENDING INVOICES
-      ========================= */
+         //PENDING INVOICES  
       if (['Pending', 'Unpaid', 'Sent', 'Viewed'].includes(status)) {
         pending.count++;
         pending.amount += amount;
       }
 
-      /* =========================
-         OVERDUE INVOICES
-      ========================= */
+        // OVERDUE INVOICES
       if (
         dueDate &&
         dueDate < today &&
@@ -652,9 +620,7 @@ router.get('/payment-status', async (req, res) => {
         });
       }
 
-      /* =========================
-         UPCOMING PAYMENTS
-      ========================= */
+        // UPCOMING PAYMENTS
       if (dueDate && dueDate > today) {
         const diffDays = Math.ceil(
           (dueDate - today) / (1000 * 60 * 60 * 24)
@@ -665,9 +631,7 @@ router.get('/payment-status', async (req, res) => {
         else if (diffDays <= 90) upcoming.next_90_days += amount;
       }
 
-      /* =========================
-         PAYMENT METRICS
-      ========================= */
+        // PAYMENT METRICS
       if (['Paid', 'PAID', 'paid'].includes(status)) {
         paid_count++;
         if (i.payment_date && dueDate) {
@@ -692,9 +656,8 @@ router.get('/payment-status', async (req, res) => {
         : 0
     };
 
-    /* =========================
-       FINAL RESPONSE
-    ========================= */
+       //FINAL RESPONSE
+
     res.json({
       success: true,
       data: {
