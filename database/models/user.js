@@ -1,4 +1,3 @@
-// be_server/database/models/user.js
 
 module.exports = (sequelize, DataTypes) => {
 
@@ -6,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
 
      id: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4, // ✅ this generates UUID automatically
+      defaultValue: DataTypes.UUIDV4, 
       primaryKey: true
     },
     

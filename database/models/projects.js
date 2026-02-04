@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
      project_id: {
   type: DataTypes.UUID,
   primaryKey: true,
-  defaultValue: DataTypes.UUIDV4, // ✅ automatically generates UUID
+  defaultValue: DataTypes.UUIDV4, 
   allowNull: false,
 },
 
@@ -53,8 +53,8 @@ module.exports = (sequelize, DataTypes) => {
 
      start_date_planned: {
   type: DataTypes.DATE,
-  allowNull: true,       // can remain null if unknown
-  defaultValue: null     // optional, explicit
+  allowNull: true,      
+  defaultValue: null     
 },
 start_date_actual: {
   type: DataTypes.DATE,
@@ -113,10 +113,10 @@ end_date_actual: {
     },
     {
       tableName: 'projects',
-      timestamps: true,      // creates created_at & updated_at
-      underscored: true,     // snake_case columns
+      timestamps: true,      
+      underscored: true,     
     }
   );
-
+    
   return Project;
 };
