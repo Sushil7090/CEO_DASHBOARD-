@@ -1,42 +1,89 @@
 const express = require('express');
 const router = express.Router();
-const { User } = require('../../database/models'); 
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 
-// ✅ Correct middleware import
 const authenticateJWT = require('../middleware/auth.middleware');
-const { UserCourse, Course } = require('../../database/models');
+const { User } = require('../../database/models');
 
-console.log('usersRoutes.js loaded'); // 🔹 Debug
+console.log('usersRoutes.js loaded');
 
-// Test route
-router.get('/test', (req, res) => {
-  res.json({ success: true, message: 'Users route works!' });
-});
-
-// GET all users
-router.get('/', async (req, res) => {
+   //GET ALL USERS 
+   //GET /api/users
+router.get('/', authenticateJWT, async (req, res) => {
   try {
     const users = await User.findAll({
-      attributes: ['id', 'firstName', 'lastName', 'email']
+      attributes: ['id', 'firstName', 'lastName', 'email', 'role']
     });
-    res.json({ success: true, users });
+
+    res.status(200).json({
+      success: true,
+      message: 'Users fetched successfully',
+      data: users
+    });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users',
+      error: err.message
+    });
   }
 });
 
-// CREATE user
+   //GET USER BY ID
+   //GET /api/users/:user_id
+router.get('/:user_id', authenticateJWT, async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    const user = await User.findOne({
+      where: { id: user_id },
+      attributes: ['id', 'firstName', 'lastName', 'email', 'role']
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'User fetched successfully',
+      data: user
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user',
+      error: err.message
+    });
+  }
+});
+
+   //CREATE USER
+  // POST /api/users
 router.post('/', async (req, res) => {
   try {
-    const { firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password, role } = req.body;
+
     if (!firstName || !lastName || !email || !password) {
-      return res.status(400).json({ success: false, message: 'All fields required' });
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required'
+      });
     }
 
     const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) return res.status(409).json({ success: false, message: 'Email already exists' });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'Email already exists'
+      });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -45,15 +92,28 @@ router.post('/', async (req, res) => {
       firstName,
       lastName,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      role: role || 'User'
     });
 
     res.status(201).json({
       success: true,
-      user: { id: user.id, firstName, lastName, email }
+      message: 'User created successfully',
+      data: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role
+      }
     });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create user',
+      error: err.message
+    });
   }
 });
 

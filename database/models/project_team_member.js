@@ -4,14 +4,13 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class ProjectTeamMember extends Model {
     static associate(models) {
-      // Each team member belongs to a project
+
       ProjectTeamMember.belongsTo(models.Project, {
         foreignKey: 'project_id',
         targetKey: 'project_id',
         as: 'project'
       });
 
-      // Each team member belongs to a user
       ProjectTeamMember.belongsTo(models.User, {
         foreignKey: 'user_id',
         targetKey: 'id',
@@ -23,16 +22,16 @@ module.exports = (sequelize, DataTypes) => {
   ProjectTeamMember.init(
     {
       id: {
-  type: DataTypes.UUID,
-  defaultValue: DataTypes.UUIDV4,   // <- must match migration
-  primaryKey: true,
-  allowNull: false
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,   
+      primaryKey: true,
+      allowNull: false
 },
-      project_id: {
-        type: DataTypes.INTEGER,
-        allowNull: false
+     project_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
       },
-      user_id: {
+    user_id: {
         type: DataTypes.INTEGER,
         allowNull: false
       },
@@ -67,7 +66,7 @@ module.exports = (sequelize, DataTypes) => {
       sequelize,
       modelName: 'ProjectTeamMember',
       tableName: 'project_team_members',
-      timestamps: false // because we are manually handling created_at/updated_at
+      timestamps: false 
     }
   );
 

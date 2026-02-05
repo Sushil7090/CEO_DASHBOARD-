@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { Project } = require('../../database/models');
 const authMiddleware = require('../middleware/auth.middleware');
-  // GET ALL PROJECTS (JWT PROTECTED)
+  // GET ALL PROJECTS
    //GET /api/projects
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const projects = await Project.findAll({
-      order: [['created_at', 'DESC']], // snake_case (underscored: true)
+      order: [['created_at', 'DESC']], 
     });
 
     res.status(200).json({
@@ -29,14 +29,12 @@ router.get('/:project_id', authMiddleware, async (req, res) => {
   try {
     const { project_id } = req.params;
 
-    // basic UUID validation
     if (!project_id || project_id.length !== 36) {
       return res.status(400).json({
         success: false,
         message: 'Invalid project_id format',
-      });
+    });
     }
-
     const project = await Project.findOne({
       where: { project_id },
     });
@@ -45,7 +43,7 @@ router.get('/:project_id', authMiddleware, async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Project not found',
-      });
+    });
     }
 
     res.status(200).json({
@@ -57,7 +55,7 @@ router.get('/:project_id', authMiddleware, async (req, res) => {
       success: false,
       message: 'Error fetching project',
       error: error.message,
-    });
+  });
   }
 });
 
@@ -85,7 +83,6 @@ router.post('/', authMiddleware, async (req, res) => {
       geography,
     } = req.body;
 
-    // Required validation
     if (!project_name || !client_name || !project_owner) {
       return res.status(400).json({
         success: false,
@@ -125,15 +122,14 @@ router.post('/', authMiddleware, async (req, res) => {
       error: error.message,
     });
   }
-});// UPDATE PROJECT (ALL FIELDS) + TEAM MEMBERS
-// PUT /api/projects/:project_id
-// Body: all project fields + team_members array
+});
+
+    // UPDATE PROJECT 
+    // PUT /api/projects/:project_id
 router.put('/:project_id', authMiddleware, async (req, res) => {
   try {
     const { project_id } = req.params;
-    const userId = req.user.id; // From JWT via authMiddleware
-
-    // Get user info from DB
+    const userId = req.user.id; 
     const user = await User.findByPk(userId);
     if (!user) {
       return res.status(401).json({
@@ -142,15 +138,12 @@ router.put('/:project_id', authMiddleware, async (req, res) => {
       });
     }
 
-    // Role check: Only Admin or Manager can update project
     if (user.role === 'Employee') {
       return res.status(403).json({
         success: false,
         message: 'Only Admin or Manager can update projects',
       });
     }
-
-    // Find project
     const project = await Project.findOne({ where: { project_id } });
     if (!project) {
       return res.status(404).json({
@@ -159,33 +152,35 @@ router.put('/:project_id', authMiddleware, async (req, res) => {
       });
     }
 
-    // Update project fields dynamically
     await project.update(req.body);
 
     // Handle team_members if provided
-    if (req.body.team_members && Array.isArray(req.body.team_members)) {
-      // Remove existing team members
-      await ProjectTeamMember.destroy({ where: { project_id } });
+    if (req.body.team_members && Array.isArray(req.body.team_members)) 
+    {
+      await ProjectTeamMember.destroy({ where: { project_id } 
+    });
 
-      // Loop through new team_members array
+    // Loop through new team_members array
       for (const member of req.body.team_members) {
         const employee = await User.findOne({
           where: { id: member.user_id, role: 'Employee' },
-        });
+    });
 
-        if (!employee) {
-          return res.status(400).json({
-            success: false,
-            message: `User ID ${member.user_id} is not a valid Employee`,
-          });
-        }
+      if (!employee) {
+         return res.status(400).json
+    ({
+          success: false,
+          message: `User ID ${member.user_id} is not a valid Employee`,
+    });
+    }
 
-        await ProjectTeamMember.create({
-          project_id,
-          user_id: member.user_id,
-          member_role: member.member_role,
-          rate_per_hour: member.rate_per_hour,
-          allocation_percentage: member.allocation_percentage,
+        await ProjectTeamMember.create
+      ({
+        project_id,
+        user_id: member.user_id,
+        member_role: member.member_role,
+        rate_per_hour: member.rate_per_hour,
+        allocation_percentage: member.allocation_percentage,
         });
       }
     }
@@ -208,12 +203,12 @@ router.put('/:project_id', authMiddleware, async (req, res) => {
       message: 'Failed to update project',
       error: error.message,
     });
-  }
-});
+    }
+    });
 
-   //DELETE A PROJECT (JWT PROTECTED)
+   //DELETE A PROJECT 
    //DELETE /api/projects/:id
-router.delete('/:id', authMiddleware, async (req, res) => {
+  router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -227,7 +222,6 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       });
     }
 
-    // Permanently delete the project
     await project.destroy();
 
     return res.status(200).json({
@@ -244,12 +238,49 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// ADD PROJECT TEAM MEMBER
-// POST /api/projects/team-members
-const { ProjectTeamMember } = require('../../database/models');
+   //GET PROJECT TEAM MEMBERS
+   router.get('/team-members/:project_id', authMiddleware, async (req, res) => {
+   try {
+    const { project_id } = req.params;
 
-router.post('/team-members', authMiddleware, async (req, res) => {
-  try {
+    if (!project_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'project_id is required'
+      });
+    }
+
+    const teamMembers = await ProjectTeamMember.findAll({
+      where: { project_id },
+      include: [
+        {
+        model: User,
+        as: 'user',
+        attributes: ['id', 'firstName', 'lastName', 'email', 'role']
+        }
+      ]
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Project team members fetched successfully',
+      data: teamMembers
+    });
+
+  } catch (error) {
+    console.error('Get Team Members Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch project team members',
+      error: error.message
+    });
+  }
+});
+
+    // ADD PROJECT TEAM MEMBER
+    const { ProjectTeamMember, User } = require('../../database/models');
+    router.post('/team-members', authMiddleware, async (req, res) => {
+     try {
     const {
       project_id,
       user_id,
@@ -259,15 +290,13 @@ router.post('/team-members', authMiddleware, async (req, res) => {
       assigned_date
     } = req.body;
 
-    // Required validation
     if (!project_id || !user_id) {
       return res.status(400).json({
         success: false,
         message: 'project_id and user_id are required'
-      });
+    });
     }
 
-    // Prevent duplicate member in same project
     const existingMember = await ProjectTeamMember.findOne({
       where: { project_id, user_id }
     });
@@ -303,6 +332,5 @@ router.post('/team-members', authMiddleware, async (req, res) => {
     });
   }
 });
-
 
 module.exports = router;
