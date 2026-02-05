@@ -1,9 +1,8 @@
-
 module.exports = (sequelize, DataTypes) => {
 
   const User = sequelize.define('User', {
 
-     id: {
+    id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4, 
       primaryKey: true
@@ -28,9 +27,17 @@ module.exports = (sequelize, DataTypes) => {
     password: {
       type: DataTypes.STRING,
       allowNull: false
+    },
+
+   role: {
+    type: DataTypes.ENUM('Admin', 'Manager', 'User'),
+    allowNull: false,
+    defaultValue: 'User'
     }
 
-  }, {
+  },
+  
+  {
     tableName: 'users',
     freezeTableName: true
   });

@@ -5,34 +5,34 @@ module.exports = {
     await queryInterface.createTable('project_team_members', {
      id: {
   type: Sequelize.UUID,
-  defaultValue: Sequelize.UUIDV4,  // <- auto-generate
+  defaultValue: Sequelize.UUIDV4,  
   primaryKey: true,
   allowNull: false
 },
   project_id: {
-        type: Sequelize.UUID,               
-        allowNull: false,
-        references: {
-          model: 'projects',
-          key: 'project_id'
-        },
+      type: Sequelize.UUID,               
+      allowNull: false,
+      references: {
+        model: 'projects',
+        key: 'project_id'
+      },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
-      },
-      user_id: {
-        type: Sequelize.UUID,               
-        allowNull: false,
-        references: {
-          model: 'users',
-          key: 'id'
-        },
+ },
+  user_id: {
+      type: Sequelize.UUID,               
+      allowNull: false,
+      references: {
+       model: 'users',
+      key: 'id'
+    },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
-      },
+    },
       member_role: {
         type: Sequelize.STRING,
         allowNull: true
-      },
+    },
       allocation_percentage: {
         type: Sequelize.FLOAT,
         allowNull: true

@@ -8,12 +8,8 @@ module.exports = {
       defaultValue: 'employee'
     });
   },
-
   async down(queryInterface, Sequelize) {
-    // First remove column
     await queryInterface.removeColumn('users', 'role');
-
-    // Then drop enum type (PostgreSQL specific)
     await queryInterface.sequelize.query(
       'DROP TYPE IF EXISTS "enum_users_role";'
     );
