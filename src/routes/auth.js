@@ -4,22 +4,27 @@ const { User } = require('../../database/models');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-/* =====================================================
-   SIGNUP ROUTE
-===================================================== */
+// SIGNUP ROUTE
+// POST /api/auth/signup
+// Body: { firstName, lastName, email, password, role }
 
-/**
- * POST /api/auth/signup
- * Body: { firstName, lastName, email, password }
- */
 router.post('/signup', async (req, res) => {
   try {
-    const { firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password, role } = req.body;
 
-    if (!firstName || !lastName || !email || !password) {
+    if (!firstName || !lastName || !email || !password || !role) {
       return res.status(400).json({
         success: false,
         message: 'All fields are required'
+      });
+    }
+
+    // role validation 
+    const allowedRoles = ['admin', 'manager', 'employee'];
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role'
       });
     }
 
@@ -35,12 +40,13 @@ router.post('/signup', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user (DO NOT set id manually)
+    // Create user (ONLY role added)
     const user = await User.create({
       firstName,
       lastName,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      role
     });
 
     res.status(201).json({
@@ -50,7 +56,8 @@ router.post('/signup', async (req, res) => {
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     });
 
@@ -63,9 +70,9 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-  // LOGIN ROUTE (JWT ADDED)
+// LOGIN ROUTE
 // POST /api/auth/login
- //Body: { email, password }
+// Body: { email, password }
 
 router.post('/login', async (req, res) => {
   try {
@@ -86,7 +93,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({
@@ -95,7 +101,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // ✅ Generate JWT
     const token = jwt.sign(
       {
         user_id: user.id,
@@ -113,7 +118,8 @@ router.post('/login', async (req, res) => {
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
-        email: user.email
+        email: user.email,
+        role: user.role   
       }
     });
 

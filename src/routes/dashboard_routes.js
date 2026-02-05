@@ -3,7 +3,7 @@ const router = express.Router();
 const { Project, SalesDeal, Invoice, Expense, SalesTeam } =
   require('../../database/models');
 
- //  1: DASHBOARD OVERVIEW
+ //  DASHBOARD OVERVIEW
 router.get('/overview', async (req, res) => {
   try {
     const projects = await Project.findAll({ raw: true });
@@ -102,7 +102,7 @@ router.get('/overview', async (req, res) => {
   }
 });
 
- // 2: FINANCIAL SUMMARY 
+ // FINANCIAL SUMMARY 
 router.get('/financial-summary', async (req, res) => {
   try {
     const projects = await Project.findAll();
@@ -224,7 +224,7 @@ router.get('/financial-summary', async (req, res) => {
 });
 
 
- //3: SALES FUNNEL
+ //SALES FUNNEL
 router.get('/sales-funnel', async (req, res) => {
   try {
     const deals = await SalesDeal.findAll();
@@ -313,7 +313,7 @@ router.get('/sales-funnel', async (req, res) => {
   }
 });
 
- //  4:TEAM PERFORMANCE
+ // TEAM PERFORMANCE
 router.get('/team-performance', async (req, res) => {
   try {
 
