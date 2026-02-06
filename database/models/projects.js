@@ -51,47 +51,45 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
 
-     start_date_planned: {
-  type: DataTypes.DATE,
-  allowNull: true,      
-  defaultValue: null     
-},
-start_date_actual: {
-  type: DataTypes.DATE,
-  allowNull: true,
-  defaultValue: null
-},
-end_date_planned: {
-  type: DataTypes.DATE,
-  allowNull: true,
-  defaultValue: null
-},
-end_date_actual: {
-  type: DataTypes.DATE,
-  allowNull: true,
-  defaultValue: null
-},
+      start_date_planned: {
+       type: DataTypes.DATE,
+       allowNull: true,      
+       defaultValue: null     
+     },
+     start_date_actual: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: null
+    },
+    end_date_planned: {
+     type: DataTypes.DATE,
+     allowNull: true,
+     defaultValue: null
+    },
+   end_date_actual: {
+     type: DataTypes.DATE,
+     allowNull: true,
+     defaultValue: null
+    },
+    total_budget: {
+     type: DataTypes.DECIMAL(15, 2),
+     allowNull: true,
+    },
 
-
-      total_budget: {
-        type: DataTypes.DECIMAL(15, 2),
-        allowNull: true,
+    total_cost_to_date: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: true,
       },
 
-      total_cost_to_date: {
-        type: DataTypes.DECIMAL(15, 2),
-        allowNull: true,
+    total_revenue: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: true,
       },
 
-      total_revenue: {
-        type: DataTypes.DECIMAL(15, 2),
-        allowNull: true,
-      },
-
-      currency: {
-        type: DataTypes.STRING(10),
-        allowNull: false,
-        defaultValue: 'INR',
+    currency: {
+      type: DataTypes.STRING(10),
+      allowNull: false,
+      defaultValue: 'INR',
       },
 
       progress_percentage: {

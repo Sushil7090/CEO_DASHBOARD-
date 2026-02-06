@@ -1,11 +1,15 @@
 require("dotenv").config();
 
-const sslConfig = {
-  ssl: {
-    require: true,
-    rejectUnauthorized: false
-  }
-};
+const isLocal = process.env.DB_HOST === "localhost" || process.env.DB_HOST === "127.0.0.1";
+
+const sslConfig = isLocal
+  ? {} 
+  : {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    };
 
 module.exports = {
   development: {
@@ -27,7 +31,7 @@ module.exports = {
     port: parseInt(process.env.DB_PORT || "5432", 10),
     dialect: "postgres",
     logging: false,
-    dialectOptions: sslConfig
+    dialectOptions: {}
   },
 
   production: {
@@ -38,6 +42,11 @@ module.exports = {
     port: parseInt(process.env.DB_PORT || "5432", 10),
     dialect: "postgres",
     logging: false,
-    dialectOptions: sslConfig
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    }
   }
 };
