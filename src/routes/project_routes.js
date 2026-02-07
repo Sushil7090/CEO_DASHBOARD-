@@ -122,6 +122,61 @@ router.get('/:project_id', authMiddleware, async (req, res) => {
 });
 
 /* =========================
+   GET PROJECT WITH TEAM MEMBERS
+   GET /api/projects/details/:project_id
+========================= */
+router.get('/details/:project_id', authMiddleware, async (req, res) => {
+  try {
+    const { project_id } = req.params;
+
+    if (!isValidUUID(project_id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid project_id format',
+      });
+    }
+
+    const project = await Project.findOne({
+      where: { project_id },
+      include: [
+        {
+          model: ProjectTeamMember,
+          as: 'team_members',
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'firstName', 'lastName', 'email', 'role'],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Project details fetched successfully',
+      data: project,
+    });
+  } catch (error) {
+    console.error('Get Project Details Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch project details',
+      error: error.message,
+    });
+  }
+});
+
+
+/* =========================
    CREATE PROJECT
    POST /api/projects
 ========================= */

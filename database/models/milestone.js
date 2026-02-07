@@ -141,7 +141,7 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: true
   });
 
-  Milestone.associate = (models) => {
+   Milestone.associate = (models) => {
     Milestone.belongsTo(models.Project, {
       foreignKey: 'project_id',
       as: 'project'

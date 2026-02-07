@@ -33,14 +33,20 @@ module.exports = (sequelize, DataTypes) => {
   type: DataTypes.ENUM('admin', 'manager', 'employee'),
   allowNull: false,
   defaultValue: 'employee'
-}
-
+   }
   },
   
   {
     tableName: 'users',
     freezeTableName: true
   });
+   User.associate = (models) => {
+   User.hasMany(models.ProjectTeamMember, {
+    foreignKey: 'user_id',
+    sourceKey: 'id',
+    as: 'project_memberships',
+  });
+};
 
   return User;
 };
