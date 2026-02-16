@@ -40,6 +40,7 @@ module.exports = (sequelize, DataTypes) => {
     tableName: 'users',
     freezeTableName: true
   });
+  
    User.associate = (models) => {
    User.hasMany(models.ProjectTeamMember, {
     foreignKey: 'user_id',

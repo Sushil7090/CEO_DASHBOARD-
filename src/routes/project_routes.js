@@ -7,6 +7,11 @@ const {
   User,
 } = require('../../database/models');
 
+const Milestone = require('../../database/models/milestone')(
+  require('../../database/models').sequelize,
+  require('../../database/models').Sequelize.DataTypes
+);
+
 const authMiddleware = require('../middleware/auth.middleware');
 
 /* =========================
@@ -419,6 +424,54 @@ router.post('/team-members', authMiddleware, async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to add project team member',
+      error: error.message,
+    });
+  }
+});
+
+/* =========================
+   GET PROJECT MILESTONES
+   GET /api/projects/milestones/:project_id
+========================= */
+router.get('/milestones/:project_id', authMiddleware, async (req, res) => {
+  try {
+    const { project_id } = req.params;
+
+    if (!isValidUUID(project_id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid project_id format',
+      });
+    }
+
+    // Check if project exists
+    const project = await Project.findOne({
+      where: { project_id },
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found',
+      });
+    }
+
+    const milestones = await Milestone.findAll({
+      where: { project_id },
+      order: [['created_at', 'ASC']],
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Milestones fetched successfully',
+      count: milestones.length,
+      data: milestones,
+    });
+  } catch (error) {
+    console.error('Get Milestones Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch milestones',
       error: error.message,
     });
   }

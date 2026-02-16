@@ -61,17 +61,17 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       defaultValue: null
     },
-    end_date_planned: {
+       end_date_planned: {
      type: DataTypes.DATE,
      allowNull: true,
      defaultValue: null
     },
-   end_date_actual: {
+       end_date_actual: {
      type: DataTypes.DATE,
      allowNull: true,
      defaultValue: null
     },
-    total_budget: {
+       total_budget: {
      type: DataTypes.DECIMAL(15, 2),
      allowNull: true,
     },
@@ -179,13 +179,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       allowNull: true,
       defaultValue: null
-    },
-    end_date_planned: {
+      },
+       end_date_planned: {
      type: DataTypes.DATE,
      allowNull: true,
      defaultValue: null
     },
-   end_date_actual: {
+       end_date_actual: {
      type: DataTypes.DATE,
      allowNull: true,
      defaultValue: null
@@ -235,11 +235,11 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
   
-   Project.associate = (models) => {
-   Project.hasMany(models.ProjectTeamMember, {
-    foreignKey: 'project_id',
-    sourceKey: 'project_id',
-    as: 'team_members',
+      Project.associate = (models) => {
+      Project.hasMany(models.ProjectTeamMember, {
+        foreignKey: 'project_id',
+        sourceKey: 'project_id',
+        as: 'team_members',
     });
   };
 
