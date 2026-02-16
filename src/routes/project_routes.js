@@ -39,20 +39,25 @@ router.get('/team-members/:project_id', authMiddleware, async (req, res) => {
 
     const teamMembers = await ProjectTeamMember.findAll({
       where: { project_id },
-      include: [
-        {
-          model: User,
-          as: 'user',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'role'],
-        },
-      ],
+      attributes: [
+        'project_id',
+        'user_id',
+        'member_role',
+        'allocation_percentage',
+        'rate_per_hour',
+        'assigned_date',
+        'created_at',
+        'updated_at'
+      ]
     });
 
     return res.status(200).json({
       success: true,
-      message: 'Project team members fetched successfully',
+      project_id,
+      message: 'Success',
       data: teamMembers,
     });
+
   } catch (error) {
     console.error('Get Team Members Error:', error);
     return res.status(500).json({
@@ -62,6 +67,7 @@ router.get('/team-members/:project_id', authMiddleware, async (req, res) => {
     });
   }
 });
+
 
 /* =========================
    GET ALL PROJECTS
