@@ -11,7 +11,8 @@ const saleActivityRoutes = require('./saleActivity_routes');
 const invoiceRoutes = require('./invoiceTable_routes');
 const expenseRoutes = require('./expenseTable_routes');
 const dashboardRoutes = require('./dashboard_routes');
-
+const phaseRoutes = require('./phase_routes');
+router.use('/phases', phaseRoutes);
 router.use('/auth', authRoutes);
 router.use('/users', usersRoutes);
 router.use('/projects', projectRoutes);
