@@ -76,26 +76,34 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (!email ) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required'
+        message: 'Email is required'
       });
     }
-
+      
+    if(!password)
+    {return  res.status(400).json({
+        success: false,
+        message: 'Password is required'
+      });
+    }
+     
     const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid email'
       });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
+
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid password'
       });
     }
 
@@ -117,7 +125,7 @@ router.post('/login', async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        role: user.role   
+        role: user.role
       }
     });
 
@@ -129,5 +137,6 @@ router.post('/login', async (req, res) => {
     });
   }
 });
+
 
 module.exports = router;

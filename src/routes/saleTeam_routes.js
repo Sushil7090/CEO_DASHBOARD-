@@ -162,7 +162,7 @@ router.get('/hierarchy/:leadId', authMiddleware, async (req, res) => {
 });
 
  // TEAM PERFORMANCE STATS
-   //GET /api/sales-team/stats
+   //GET /api/sales-team/stats/performance
 
 router.get('/stats/performance', authMiddleware, async (req, res) => {
     try {

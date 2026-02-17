@@ -15,7 +15,6 @@ router.post('/', async (req, res) => {
 
   //GET ALL DEALS (Pipeline Filters)
 //   GET /api/sales-deals?stage=Negotiation&status=Open
-
 router.get('/', async (req, res) => {
   try {
     const { stage, status } = req.query;

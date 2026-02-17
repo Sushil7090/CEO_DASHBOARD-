@@ -3,11 +3,11 @@ const router = express.Router();
 const { Milestone } = require('../../database/models');
 const authMiddleware = require('../middleware/auth.middleware');
 
-/**
- * Detect a date-like field safely:
- * - DATE type
- * - STRING field containing "date", "due", "end", "deadline"
- */
+
+ // Detect a date-like field safely:
+ // DATE type
+ //STRING field containing "date", "due", "end", "deadline"
+ 
 const getDateField = () => {
   const attrs = Milestone.rawAttributes;
 

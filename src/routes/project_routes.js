@@ -7,6 +7,11 @@ const {
   User,
 } = require('../../database/models');
 
+const Milestone = require('../../database/models/milestone')(
+  require('../../database/models').sequelize,
+  require('../../database/models').Sequelize.DataTypes
+);
+
 const authMiddleware = require('../middleware/auth.middleware');
 
 /* =========================
@@ -34,20 +39,25 @@ router.get('/team-members/:project_id', authMiddleware, async (req, res) => {
 
     const teamMembers = await ProjectTeamMember.findAll({
       where: { project_id },
-      include: [
-        {
-          model: User,
-          as: 'user',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'role'],
-        },
-      ],
+      attributes: [
+        'project_id',
+        'user_id',
+        'member_role',
+        'allocation_percentage',
+        'rate_per_hour',
+        'assigned_date',
+        'created_at',
+        'updated_at'
+      ]
     });
 
     return res.status(200).json({
       success: true,
-      message: 'Project team members fetched successfully',
+      project_id,
+      message: 'Success',
       data: teamMembers,
     });
+
   } catch (error) {
     console.error('Get Team Members Error:', error);
     return res.status(500).json({
@@ -57,6 +67,7 @@ router.get('/team-members/:project_id', authMiddleware, async (req, res) => {
     });
   }
 });
+
 
 /* =========================
    GET ALL PROJECTS
@@ -368,57 +379,125 @@ router.delete('/:project_id', authMiddleware, async (req, res) => {
 });
 
 /* =========================
-   ADD PROJECT TEAM MEMBER
+   ADD PROJECT TEAM MEMBERS (Single or Multiple)
    POST /api/projects/team-members
 ========================= */
 router.post('/team-members', authMiddleware, async (req, res) => {
   try {
-    const {
-      project_id,
-      user_id,
-      member_role,
-      allocation_percentage,
-      rate_per_hour,
-      assigned_date,
-    } = req.body;
+    let members = req.body;
 
-    if (!project_id || !user_id) {
+    // If single object → convert to array
+    if (!Array.isArray(members)) {
+      members = [members];
+    }
+
+    if (members.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'project_id and user_id are required',
+        message: 'At least one team member is required',
       });
     }
 
-    const exists = await ProjectTeamMember.findOne({
-      where: { project_id, user_id },
-    });
+    const createdMembers = [];
 
-    if (exists) {
-      return res.status(409).json({
-        success: false,
-        message: 'User already added to this project',
+    for (const member of members) {
+      const {
+        project_id,
+        user_id,
+        member_role,
+        allocation_percentage,
+        rate_per_hour,
+        assigned_date,
+      } = member;
+
+      if (!project_id || !user_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'project_id and user_id are required for each member',
+        });
+      }
+
+      // Check duplicate
+      const exists = await ProjectTeamMember.findOne({
+        where: { project_id, user_id },
       });
-    }
 
-    const teamMember = await ProjectTeamMember.create({
-      project_id,
-      user_id,
-      member_role,
-      allocation_percentage,
-      rate_per_hour,
-      assigned_date,
-    });
+      if (exists) {
+        continue; // Skip already added user
+      }
+
+      const teamMember = await ProjectTeamMember.create({
+        project_id,
+        user_id,
+        member_role,
+        allocation_percentage,
+        rate_per_hour,
+        assigned_date,
+      });
+
+      createdMembers.push(teamMember);
+    }
 
     return res.status(201).json({
       success: true,
-      message: 'Project team member added successfully',
-      data: teamMember,
+      message: 'Project team members added successfully',
+      count: createdMembers.length,
+      data: createdMembers,
     });
+
   } catch (error) {
-    console.error('Add Team Member Error:', error);
+    console.error('Add Team Members Error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to add project team member',
+      message: 'Failed to add project team members',
+      error: error.message,
+    });
+  }
+});
+
+/* =========================
+   GET PROJECT MILESTONES
+   GET /api/projects/milestones/:project_id
+========================= */
+router.get('/milestones/:project_id', authMiddleware, async (req, res) => {
+  try {
+    const { project_id } = req.params;
+
+    if (!isValidUUID(project_id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid project_id format',
+      });
+    }
+
+    // Check if project exists
+    const project = await Project.findOne({
+      where: { project_id },
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found',
+      });
+    }
+
+    const milestones = await Milestone.findAll({
+      where: { project_id },
+      order: [['created_at', 'ASC']],
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Milestones fetched successfully',
+      count: milestones.length,
+      data: milestones,
+    });
+  } catch (error) {
+    console.error('Get Milestones Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch milestones',
       error: error.message,
     });
   }

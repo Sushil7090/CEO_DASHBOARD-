@@ -74,8 +74,8 @@ router.get('/overview', async (req, res) => {
           total_revenue: Number(totalRevenue.toFixed(2)),
           total_cost: Number(totalCost.toFixed(2)),
           total_budget: Number(totalBudget.toFixed(2)),
-          total_profit: Number(totalProfit.toFixed(2)), // 🔥 NEVER NULL
-          average_roi: averageROI,                      // 🔥 NEVER NaN
+          total_profit: Number(totalProfit.toFixed(2)), 
+          average_roi: averageROI,                      
           currency: 'INR'
         },
         sales: {
@@ -103,6 +103,7 @@ router.get('/overview', async (req, res) => {
 });
 
  // FINANCIAL SUMMARY 
+ ///api/dashboard/financial-summary
 router.get('/financial-summary', async (req, res) => {
   try {
     const projects = await Project.findAll();

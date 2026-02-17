@@ -35,7 +35,6 @@ module.exports = (sequelize, DataTypes) => {
       team_lead_id: {
         type: DataTypes.UUID,
         allowNull: true
-        // self-reference association added below
       },
 
       region: {
@@ -83,9 +82,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  /* ==========================
-     SELF REFERENCING RELATION
-     ========================== */
+  //SELF REFERENCING RELATION
+    
   SalesTeam.associate = (models) => {
     SalesTeam.belongsTo(models.SalesTeam, {
       foreignKey: 'team_lead_id',
