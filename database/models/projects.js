@@ -51,7 +51,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
 
-      // ✅ Changed to DATEONLY
+    
       start_date_planned: {
         type: DataTypes.DATEONLY,
         allowNull: true,
