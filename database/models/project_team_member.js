@@ -27,7 +27,7 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       allowNull: false
 },
-     project_id: {
+    project_id: {
       type: DataTypes.INTEGER,
       allowNull: false
       },
