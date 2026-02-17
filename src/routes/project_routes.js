@@ -379,57 +379,77 @@ router.delete('/:project_id', authMiddleware, async (req, res) => {
 });
 
 /* =========================
-   ADD PROJECT TEAM MEMBER
+   ADD PROJECT TEAM MEMBERS (Single or Multiple)
    POST /api/projects/team-members
 ========================= */
 router.post('/team-members', authMiddleware, async (req, res) => {
   try {
-    const {
-      project_id,
-      user_id,
-      member_role,
-      allocation_percentage,
-      rate_per_hour,
-      assigned_date,
-    } = req.body;
+    let members = req.body;
 
-    if (!project_id || !user_id) {
+    // If single object → convert to array
+    if (!Array.isArray(members)) {
+      members = [members];
+    }
+
+    if (members.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'project_id and user_id are required',
+        message: 'At least one team member is required',
       });
     }
 
-    const exists = await ProjectTeamMember.findOne({
-      where: { project_id, user_id },
-    });
+    const createdMembers = [];
 
-    if (exists) {
-      return res.status(409).json({
-        success: false,
-        message: 'User already added to this project',
+    for (const member of members) {
+      const {
+        project_id,
+        user_id,
+        member_role,
+        allocation_percentage,
+        rate_per_hour,
+        assigned_date,
+      } = member;
+
+      if (!project_id || !user_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'project_id and user_id are required for each member',
+        });
+      }
+
+      // Check duplicate
+      const exists = await ProjectTeamMember.findOne({
+        where: { project_id, user_id },
       });
-    }
 
-    const teamMember = await ProjectTeamMember.create({
-      project_id,
-      user_id,
-      member_role,
-      allocation_percentage,
-      rate_per_hour,
-      assigned_date,
-    });
+      if (exists) {
+        continue; // Skip already added user
+      }
+
+      const teamMember = await ProjectTeamMember.create({
+        project_id,
+        user_id,
+        member_role,
+        allocation_percentage,
+        rate_per_hour,
+        assigned_date,
+      });
+
+      createdMembers.push(teamMember);
+    }
 
     return res.status(201).json({
       success: true,
-      message: 'Project team member added successfully',
-      data: teamMember,
+      message: 'Project team members added successfully',
+      count: createdMembers.length,
+      data: createdMembers,
     });
+
   } catch (error) {
-    console.error('Add Team Member Error:', error);
+    console.error('Add Team Members Error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to add project team member',
+      message: 'Failed to add project team members',
       error: error.message,
     });
   }

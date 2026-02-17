@@ -22,40 +22,48 @@ module.exports = (sequelize, DataTypes) => {
   ProjectTeamMember.init(
     {
       id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,   
-      primaryKey: true,
-      allowNull: false
-},
-     project_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-      },
-    user_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
         allowNull: false
       },
+      
+      project_id: {
+        type: DataTypes.UUID,
+        allowNull: false
+      },
+
+      user_id: {
+        type: DataTypes.UUID,
+        allowNull: false
+      },
+
       member_role: {
         type: DataTypes.STRING,
         allowNull: true
       },
+
       allocation_percentage: {
         type: DataTypes.FLOAT,
         allowNull: true
       },
+
       rate_per_hour: {
         type: DataTypes.FLOAT,
         allowNull: true
       },
+
       assigned_date: {
         type: DataTypes.DATEONLY,
         allowNull: true
       },
+
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: sequelize.literal('NOW()')
       },
+
       updated_at: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -66,7 +74,7 @@ module.exports = (sequelize, DataTypes) => {
       sequelize,
       modelName: 'ProjectTeamMember',
       tableName: 'project_team_members',
-      timestamps: false 
+      timestamps: false
     }
   );
 

@@ -1,4 +1,3 @@
-// database/models/invoiceTable.js
 
 module.exports = (sequelize, DataTypes) => {
   const Invoice = sequelize.define(
