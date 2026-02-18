@@ -176,6 +176,31 @@ router.get('/overdue', authMiddleware, async (req, res) => {
     });
   }
 });
+
+//  GET PENDING MILESTONES 
+router.get('/pending-milestones', authMiddleware, async (req, res) => {
+  try {
+    const pendingMilestones = await Milestone.findAll({
+     where: { payment_status: 'Pending' },
+    order: [['payment_due_date', 'ASC']],
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: pendingMilestones.length,
+      data: pendingMilestones,
+    });
+  } catch (error) {
+    console.error('Pending Milestones Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch pending milestones',
+      error: error.message,
+    });
+  }
+});
+
+
 // GET SINGLE MILESTONE
 // GET /api/milestones/:milestoneId
 router.get('/:milestoneId', authMiddleware, async (req, res) => {
@@ -254,5 +279,7 @@ router.delete('/:milestoneId', authMiddleware, async (req, res) => {
     });
   }
 });
+
+
 
 module.exports = router;

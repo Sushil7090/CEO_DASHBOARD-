@@ -6,10 +6,8 @@ const { Project, SalesDeal, Invoice, Expense, SalesTeam} =
 const { Milestone } = require('../../database/models');
 const { Sequelize } = require('sequelize');
 
- // DASHBOARD OVERVIEW 
-router.get('/overview', async (req, res) => {
+ router.get('/overview', async (req, res) => {
   try {
-    // FETCH DATA 
     const projects = await Project.findAll({ raw: true });
     const deals = await SalesDeal.findAll({ raw: true });
     const invoices = await Invoice.findAll({ raw: true });
@@ -18,14 +16,12 @@ router.get('/overview', async (req, res) => {
       raw: true,
     });
 
-    // SAFE NUMBER HELPER
     const forceNumber = (v) => {
       if (v === null || v === undefined) return 0;
       const n = Number(v);
       return isNaN(n) ? 0 : n;
     };
 
-    // PROJECT TOTALS 
     let totalCost = 0;
     let totalBudget = 0;
 
@@ -34,22 +30,21 @@ router.get('/overview', async (req, res) => {
       totalBudget += forceNumber(p.total_budget);
     });
 
-    // PAID MILESTONE REVENUE
-const milestoneRevenue = await Milestone.findOne({
-  where: { payment_status: 'Paid' },  
-  attributes: [
-    [
-      Sequelize.fn(
-        'COALESCE',
-        Sequelize.fn('SUM', Sequelize.col('total_amount')),
-        0
-      ),
-      'total_revenue',
-    ],
-  ],
-  raw: true,
-});
-
+    // ✅ FIXED MILESTONE QUERY
+    const milestoneRevenue = await Milestone.findOne({
+      where: { status: 'Paid' },
+      attributes: [
+        [
+          Sequelize.fn(
+            'COALESCE',
+            Sequelize.fn('SUM', Sequelize.col('amount')),
+            0
+          ),
+          'total_revenue',
+        ],
+      ],
+      raw: true,
+    });
 
     const totalRevenue = forceNumber(milestoneRevenue?.total_revenue);
     const totalProfit = totalRevenue - totalCost;
@@ -59,29 +54,6 @@ const milestoneRevenue = await Milestone.findOne({
         ? Number(((totalProfit / totalCost) * 100).toFixed(2))
         : 0;
 
-    //SALES 
-    const totalDeals = deals.length;
-    const wonDeals = deals.filter(
-      (d) => d.pipeline_stage === 'Closed Won'
-    ).length;
-
-    const activeDeals = deals.filter(
-      (d) =>
-        !['Closed Won', 'Closed Lost'].includes(d.pipeline_stage)
-    ).length;
-
-    //INVOICES 
-    const pendingInvoices = invoices.filter((i) =>
-      ['Sent', 'Viewed', 'Pending', 'Unpaid'].includes(
-        i.invoice_status
-      )
-    ).length;
-
-    const overdueInvoices = invoices.filter(
-      (i) => i.invoice_status === 'Overdue'
-    ).length;
-
-    //RESPONSE -
     return res.json({
       success: true,
       data: {
@@ -103,13 +75,24 @@ const milestoneRevenue = await Milestone.findOne({
           currency: 'INR',
         },
         sales: {
-          total_deals: totalDeals,
-          closed_won: wonDeals,
-          active_pipeline: activeDeals,
+          total_deals: deals.length,
+          closed_won: deals.filter(
+            (d) => d.pipeline_stage === 'Closed Won'
+          ).length,
+          active_pipeline: deals.filter(
+            (d) =>
+              !['Closed Won', 'Closed Lost'].includes(d.pipeline_stage)
+          ).length,
         },
         invoices: {
-          pending: pendingInvoices,
-          overdue: overdueInvoices,
+          pending: invoices.filter((i) =>
+            ['Sent', 'Viewed', 'Pending', 'Unpaid'].includes(
+              i.invoice_status
+            )
+          ).length,
+          overdue: invoices.filter(
+            (i) => i.invoice_status === 'Overdue'
+          ).length,
         },
         team: {
           active_sales_reps: reps.length,
@@ -120,11 +103,10 @@ const milestoneRevenue = await Milestone.findOne({
     console.error('Dashboard Overview Error:', err);
     return res.status(500).json({
       success: false,
-      message: 'Internal Server Error',
+      message: err.message,
     });
   }
 });
-
  // FINANCIAL SUMMARY 
  ///api/dashboard/financial-summary
 router.get('/financial-summary', async (req, res) => {
