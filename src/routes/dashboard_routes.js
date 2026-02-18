@@ -30,22 +30,21 @@ const { Sequelize } = require('sequelize');
       totalBudget += forceNumber(p.total_budget);
     });
 
-    // ✅ FIXED MILESTONE QUERY
-    const milestoneRevenue = await Milestone.findOne({
-      where: { status: 'Paid' },
-      attributes: [
-        [
-          Sequelize.fn(
-            'COALESCE',
-            Sequelize.fn('SUM', Sequelize.col('amount')),
-            0
-          ),
-          'total_revenue',
-        ],
-      ],
-      raw: true,
-    });
-
+    //  FIXED MILESTONE QUERY
+    const milestoneRevenue = await Milestone.findAll({
+  where: { payment_status: 'Paid' },
+  attributes: [
+    [
+      Sequelize.fn(
+        'COALESCE',
+        Sequelize.fn('SUM', Sequelize.col('total_amount')),
+        0
+      ),
+      'total_revenue',
+    ],
+  ],
+  raw: true,
+});
     const totalRevenue = forceNumber(milestoneRevenue?.total_revenue);
     const totalProfit = totalRevenue - totalCost;
 
