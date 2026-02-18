@@ -1,112 +1,126 @@
 const express = require('express');
 const router = express.Router();
-const { Project, SalesDeal, Invoice, Expense, SalesTeam } =
+const { Project, SalesDeal, Invoice, Expense, SalesTeam} =
   require('../../database/models');
   //import milestone
 const { Milestone } = require('../../database/models');
 const { Sequelize } = require('sequelize');
 
- //  DASHBOARD OVERVIEW
+ // DASHBOARD OVERVIEW 
 router.get('/overview', async (req, res) => {
   try {
+    // FETCH DATA 
     const projects = await Project.findAll({ raw: true });
     const deals = await SalesDeal.findAll({ raw: true });
     const invoices = await Invoice.findAll({ raw: true });
     const reps = await SalesTeam.findAll({
       where: { is_active: true },
-      raw: true
+      raw: true,
     });
 
-    //HARD FORCE NUMBER (NO STRING SURVIVES)
+    // SAFE NUMBER HELPER
     const forceNumber = (v) => {
       if (v === null || v === undefined) return 0;
-      if (typeof v === 'number') return v;
-      if (typeof v === 'string') {
-        const n = parseFloat(v);
-        return isNaN(n) ? 0 : n;
-      }
-      return 0;
+      const n = Number(v);
+      return isNaN(n) ? 0 : n;
     };
 
-    // Calculate total revenue from PAID milestones
+    // PROJECT TOTALS 
+    let totalCost = 0;
+    let totalBudget = 0;
+
+    projects.forEach((p) => {
+      totalCost += forceNumber(p.total_cost_to_date);
+      totalBudget += forceNumber(p.total_budget);
+    });
+
+    // PAID MILESTONE REVENUE
 const milestoneRevenue = await Milestone.findOne({
-  where: { status: 'Paid' }, // only paid milestones
+  where: { payment_status: 'Paid' },  
   attributes: [
     [
       Sequelize.fn(
         'COALESCE',
-        Sequelize.fn('SUM', Sequelize.col('revenue_actual')),
+        Sequelize.fn('SUM', Sequelize.col('total_amount')),
         0
       ),
-      'total_revenue'
-    ]
+      'total_revenue',
+    ],
   ],
-  raw: true
+  raw: true,
 });
 
-const totalRevenue = Number(milestoneRevenue.total_revenue || 0);
+
+    const totalRevenue = forceNumber(milestoneRevenue?.total_revenue);
+    const totalProfit = totalRevenue - totalCost;
+
     const averageROI =
       totalCost > 0
         ? Number(((totalProfit / totalCost) * 100).toFixed(2))
         : 0;
 
-    // SALES 
+    //SALES 
     const totalDeals = deals.length;
-    const wonDeals = deals.filter(d => d.pipeline_stage === 'Closed Won').length;
-    const activeDeals = deals.filter(
-      d => !['Closed Won', 'Closed Lost'].includes(d.pipeline_stage)
+    const wonDeals = deals.filter(
+      (d) => d.pipeline_stage === 'Closed Won'
     ).length;
 
-    //  INVOICES 
-    const pendingInvoices = invoices.filter(i =>
-      ['Sent', 'Viewed'].includes(i.invoice_status)
+    const activeDeals = deals.filter(
+      (d) =>
+        !['Closed Won', 'Closed Lost'].includes(d.pipeline_stage)
+    ).length;
+
+    //INVOICES 
+    const pendingInvoices = invoices.filter((i) =>
+      ['Sent', 'Viewed', 'Pending', 'Unpaid'].includes(
+        i.invoice_status
+      )
     ).length;
 
     const overdueInvoices = invoices.filter(
-      i => i.invoice_status === 'Overdue'
+      (i) => i.invoice_status === 'Overdue'
     ).length;
 
-    //  RESPONSE
+    //RESPONSE -
     return res.json({
       success: true,
       data: {
         projects: {
           total: projects.length,
           in_progress: projects.filter(
-            p => p.project_status === 'In Progress'
+            (p) => p.project_status === 'In Progress'
           ).length,
           completed: projects.filter(
-            p => p.project_status === 'Completed'
-          ).length
+            (p) => p.project_status === 'Completed'
+          ).length,
         },
         financial: {
           total_revenue: Number(totalRevenue.toFixed(2)),
           total_cost: Number(totalCost.toFixed(2)),
           total_budget: Number(totalBudget.toFixed(2)),
-          total_profit: Number(totalProfit.toFixed(2)), 
-          average_roi: averageROI,                      
-          currency: 'INR'
+          total_profit: Number(totalProfit.toFixed(2)),
+          average_roi: averageROI,
+          currency: 'INR',
         },
         sales: {
           total_deals: totalDeals,
           closed_won: wonDeals,
-          active_pipeline: activeDeals
+          active_pipeline: activeDeals,
         },
         invoices: {
           pending: pendingInvoices,
-          overdue: overdueInvoices
+          overdue: overdueInvoices,
         },
         team: {
-          active_sales_reps: reps.length
-        }
-      }
+          active_sales_reps: reps.length,
+        },
+      },
     });
-
   } catch (err) {
     console.error('Dashboard Overview Error:', err);
     return res.status(500).json({
       success: false,
-      message: 'Internal Server Error'
+      message: 'Internal Server Error',
     });
   }
 });
