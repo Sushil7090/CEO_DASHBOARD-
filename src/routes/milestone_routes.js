@@ -200,6 +200,33 @@ router.get('/pending-milestones', authMiddleware, async (req, res) => {
   }
 });
 
+// GET TOTAL REVENUE FROM PAID MILESTONES
+const { fn, col } = require('sequelize');
+router.get('/total-revenue', authMiddleware, async (req, res) => {
+  try {
+    const result = await Milestone.findAll({
+      where: {
+        payment_status: 'Paid'
+      },
+      attributes: [
+        [fn('SUM', col('total_amount')), 'totalRevenue']
+      ],
+      raw: true
+    });
+
+    res.json({
+      success: true,
+      totalRevenue: result[0].totalRevenue || 0
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to calculate revenue",
+      error: error.message
+    });
+  }
+});
 
 // GET SINGLE MILESTONE
 // GET /api/milestones/:milestoneId
@@ -279,7 +306,6 @@ router.delete('/:milestoneId', authMiddleware, async (req, res) => {
     });
   }
 });
-
-
-
+ 
+  
 module.exports = router;
