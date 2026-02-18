@@ -26,13 +26,13 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         allowNull: false,
       },
-      project_id: {
-        type: DataTypes.INTEGER,
+  project_id: {
+        type: DataTypes.UUID,   // ✅ UUID (NOT INTEGER)
         allowNull: false,
       },
 
       user_id: {
-        type: DataTypes.UUID,
+        type: DataTypes.UUID,   // ✅ UUID (NOT INTEGER)
         allowNull: false,
       },
 

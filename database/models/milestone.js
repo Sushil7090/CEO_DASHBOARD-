@@ -69,11 +69,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
 
-    percentage_of_budget: {
-      type: DataTypes.ENUM('Pending', 'Paid', 'Overdue', 'Cancelled', 'Partial'),
-      allowNull: false,
-      defaultValue: 'Pending'
-    },
+  payment_status: {
+  type: DataTypes.ENUM('Pending', 'Paid', 'Overdue', 'Cancelled', 'Partial'),
+  allowNull: false,
+  defaultValue: 'Pending'
+},
 
     payment_due_date: {
       type: DataTypes.DATEONLY,
