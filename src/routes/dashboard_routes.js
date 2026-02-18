@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { Project, SalesDeal, Invoice, Expense, SalesTeam } =
   require('../../database/models');
+  //import milestone
+const { Milestone } = require('../../database/models');
+const { Sequelize } = require('sequelize');
 
  //  DASHBOARD OVERVIEW
 router.get('/overview', async (req, res) => {
@@ -25,17 +28,23 @@ router.get('/overview', async (req, res) => {
       return 0;
     };
 
-    let totalRevenue = 0;
-    let totalCost = 0;
-    let totalBudget = 0;
+    // Calculate total revenue from PAID milestones
+const milestoneRevenue = await Milestone.findOne({
+  where: { status: 'Paid' }, // only paid milestones
+  attributes: [
+    [
+      Sequelize.fn(
+        'COALESCE',
+        Sequelize.fn('SUM', Sequelize.col('revenue_actual')),
+        0
+      ),
+      'total_revenue'
+    ]
+  ],
+  raw: true
+});
 
-    for (const p of projects) {
-      totalRevenue = forceNumber(totalRevenue) + forceNumber(p.total_revenue);
-      totalCost    = forceNumber(totalCost)    + forceNumber(p.total_cost_to_date);
-      totalBudget  = forceNumber(totalBudget)  + forceNumber(p.total_budget);
-    }
-    const totalProfit = forceNumber(totalRevenue) - forceNumber(totalCost);
-
+const totalRevenue = Number(milestoneRevenue.total_revenue || 0);
     const averageROI =
       totalCost > 0
         ? Number(((totalProfit / totalCost) * 100).toFixed(2))
@@ -224,7 +233,70 @@ router.get('/financial-summary', async (req, res) => {
   }
 });
 
+router.get('/financial-summary/:projectId', async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+    // Get project
+    const project = await Project.findByPk(projectId);
 
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    // Total spent (only Paid milestones)
+    const revenueData = await Milestone.findOne({
+      where: {
+        project_id: projectId,
+        payment_status: 'Paid'
+      },
+      attributes: [
+        [
+          Sequelize.fn(
+            'COALESCE',
+            Sequelize.fn('SUM', Sequelize.col('total_amount')),
+            0
+          ),
+          'total_spent'
+        ]
+      ],
+      raw: true
+    });
+
+    const totalSpent = Number(revenueData.total_spent);
+
+    //  Calculate days passed
+    const startDate = new Date(project.start_date);
+    const today = new Date();
+
+    const daysPassed = Math.max(
+      Math.floor((today - startDate) / (1000 * 60 * 60 * 24)),
+      1
+    );
+
+    //  Burn Rate
+    const burnRate = totalSpent / daysPassed;
+
+    res.json({
+      success: true,
+      data: {
+        total_spent: totalSpent,
+        days_passed: daysPassed,
+        daily_burn_rate: Number(burnRate.toFixed(2))
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to calculate burn rate',
+      error: error.message
+    });
+  }
+});
+ 
  //SALES FUNNEL
 router.get('/sales-funnel', async (req, res) => {
   try {
