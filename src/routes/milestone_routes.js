@@ -1,6 +1,7 @@
 const express = require('express'); 
 const router = express.Router();
 const { Milestone } = require('../../database/models');
+const { Project } = require('../../database/models');
 const authMiddleware = require('../middleware/auth.middleware');
 
 
@@ -43,6 +44,9 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
+
+
+
 // GET ALL MILESTONES
 // GET /api/milestones
 router.get('/', authMiddleware, async (req, res) => {
@@ -59,6 +63,100 @@ router.get('/', authMiddleware, async (req, res) => {
     });
   }
 });
+
+// GET /api/milestones/upcoming
+
+
+router.get('/projects/pending-milestones', authMiddleware, async (req, res) => {
+  try {
+
+    const projects = await Project.findAll({
+      include: [
+        {
+          model: Milestone,
+          as: 'milestones',
+          where: {
+            payment_status: 'Pending'
+          },
+          attributes: ['id', 'title', 'due_date', 'status'],
+          required: true   // only projects that have pending milestones
+        }
+      ],
+      attributes: ['project_id', 'project_name']
+    });
+
+    // Flatten response for dashboard UI
+    const formatted = projects.flatMap(project =>
+      project.milestones.map(m => ({
+        projectName: project.project_name,
+        milestoneName: m.title,
+        dueDate: m.due_date,
+        status: m.status
+      }))
+    );
+
+    res.json({
+      success: true,
+      count: formatted.length,
+      data: formatted
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch pending milestones',
+      error: error.message
+    });
+  }
+});
+
+router.get('/pending-milestones', authMiddleware, async (req, res) => {
+  try {
+
+    const milestones = await Milestone.findAll({
+      where: {
+        payment_status: 'Pending'
+      },
+      include: [
+        {
+          model: Project,
+          as: 'project', // MUST match association alias
+          attributes: ['project_name']
+        }
+      ],
+      attributes: [
+        'milestone_id',
+        'project_id',
+        'milestone_name',
+        'actual_date',
+        'payment_status'
+      ]
+    });
+
+    // Format clean response
+    const formatted = milestones.map(m => ({
+      milestone_id: m.milestone_id,
+      milestone_name: m.milestone_name,
+      project_name: m.project ? m.project.project_name : null,
+      actual_date: m.actual_date,
+      payment_status: m.payment_status
+    }));
+
+    res.json({
+      success: true,
+      count: formatted.length,
+      data: formatted
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch pending milestones',
+      error: error.message
+    });
+  }
+});
+
 
 // GET MILESTONES BY PROJECT
 // GET /api/milestones/project/:projectId
@@ -176,58 +274,6 @@ router.get('/overdue', authMiddleware, async (req, res) => {
     });
   }
 });
-
-//  GET PENDING MILESTONES 
-router.get('/pending-milestones', authMiddleware, async (req, res) => {
-  try {
-    const pendingMilestones = await Milestone.findAll({
-     where: { payment_status: 'Pending' },
-    order: [['payment_due_date', 'ASC']],
-    });
-
-    return res.status(200).json({
-      success: true,
-      count: pendingMilestones.length,
-      data: pendingMilestones,
-    });
-  } catch (error) {
-    console.error('Pending Milestones Error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch pending milestones',
-      error: error.message,
-    });
-  }
-});
-
-// GET TOTAL REVENUE FROM PAID MILESTONES
-const { fn, col } = require('sequelize');
-router.get('/total-revenue', authMiddleware, async (req, res) => {
-  try {
-    const result = await Milestone.findAll({
-      where: {
-        payment_status: 'Paid'
-      },
-      attributes: [
-        [fn('SUM', col('total_amount')), 'totalRevenue']
-      ],
-      raw: true
-    });
-
-    res.json({
-      success: true,
-      totalRevenue: result[0].totalRevenue || 0
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to calculate revenue",
-      error: error.message
-    });
-  }
-});
-
 // GET SINGLE MILESTONE
 // GET /api/milestones/:milestoneId
 router.get('/:milestoneId', authMiddleware, async (req, res) => {
@@ -306,6 +352,5 @@ router.delete('/:milestoneId', authMiddleware, async (req, res) => {
     });
   }
 });
- 
-  
+
 module.exports = router;
