@@ -9,9 +9,9 @@ const jwt = require('jsonwebtoken');
 
 router.post('/signup', async (req, res) => {
   try {
-    const { firstName, lastName, email, password, role } = req.body;
+    const { firstName, lastName, email, role } = req.body;
 
-    if (!firstName || !lastName || !email || !password || !role) {
+    if (!firstName || !lastName || !email || !role) {
       return res.status(400).json({
         success: false,
         message: 'All fields are required'
@@ -36,8 +36,11 @@ router.post('/signup', async (req, res) => {
       });
     }
 
+    // 🔹 Auto-generate password (example: aishwarya@123)
+    const autoPassword = `${firstName.toLowerCase()}@123`;
+
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(autoPassword, 10);
 
     // Create user
     const user = await User.create({
@@ -51,6 +54,7 @@ router.post('/signup', async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
+      generatedPassword: autoPassword, // send this once (optional)
       user: {
         id: user.id,
         firstName: user.firstName,
@@ -68,6 +72,7 @@ router.post('/signup', async (req, res) => {
     });
   }
 });
+
 
 // LOGIN ROUTE
 // POST /api/auth/login
