@@ -745,4 +745,105 @@ router.get('/payment-status', async (req, res) => {
   }
 });
 
+/**************************************************
+  ANALYTICS DASHBOARD
+  /api/dashboard/analytics
+ **************************************************/
+router.get('/analytics', async (req, res) => {
+  try {
+    const projects = await Project.findAll({ raw: true });
+
+    const forceNumber = (v) => {
+      if (!v) return 0;
+      const n = Number(v);
+      return isNaN(n) ? 0 : n;
+    };
+
+       //SUMMARY CARDS
+    const totalProjects = projects.length;
+
+    const activeProjects = projects.filter(
+      (p) => p.project_status === 'In Progress'
+    ).length;
+
+    const projectsAtRisk = projects.filter((p) => {
+      const budget = forceNumber(p.total_budget);
+      const cost = forceNumber(p.total_cost_to_date);
+      const progress = forceNumber(p.progress_percentage);
+
+      return cost > budget || progress < 40;
+    }).length;
+    
+        //TOTAL REVENUE (Paid Milestones)
+    const revenueData = await Milestone.findOne({
+      where: { payment_status: 'Paid' },
+      attributes: [
+        [
+          Sequelize.fn(
+            'COALESCE',
+            Sequelize.fn('SUM', Sequelize.col('total_amount')),
+            0
+          ),
+          'total_revenue',
+        ],
+      ],
+      raw: true,
+    });
+
+    const totalRevenue = forceNumber(revenueData.total_revenue);
+
+        //BUDGET VS ACTUAL SPEND
+    const budgetVsActual = projects.map((p) => ({
+      project_id: p.project_id,
+      project_name: p.project_name,
+      budget: forceNumber(p.total_budget),
+      spent: forceNumber(p.total_cost_to_date),
+    }));
+
+        //BUDGET BY CATEGORY
+    const allowedCategories = ['Digital Transformation', 'AI & ML'];
+    let budgetByCategory = {};
+
+    projects.forEach((p) => {
+      const category = p.category;
+
+      if (!allowedCategories.includes(category)) return;
+
+      if (!budgetByCategory[category]) {
+        budgetByCategory[category] = {
+          total_budget: 0,
+          total_spent: 0,
+        };
+      }
+
+      budgetByCategory[category].total_budget += forceNumber(p.total_budget);
+      budgetByCategory[category].total_spent += forceNumber(p.total_cost_to_date);
+    });
+
+       //FINAL RESPONSE
+    res.json({
+      success: true,
+      data: {
+        summary_cards: {
+          total_projects: totalProjects,
+          active_projects: activeProjects,
+          projects_at_risk: projectsAtRisk,
+          total_revenue: totalRevenue,
+        },
+
+        charts: {
+          budget_vs_actual: budgetVsActual,
+          budget_by_category: budgetByCategory,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Analytics Error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 module.exports = router;
