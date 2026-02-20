@@ -6,7 +6,6 @@ const jwt = require('jsonwebtoken');
 
 // SIGNUP ROUTE
 // POST /api/auth/signup
-
 router.post('/signup', async (req, res) => {
   try {
     const { firstName, lastName, email, role } = req.body;
@@ -72,6 +71,7 @@ router.post('/signup', async (req, res) => {
     });
   }
 });
+
 
 
 // LOGIN ROUTE
