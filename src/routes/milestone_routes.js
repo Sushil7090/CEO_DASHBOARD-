@@ -329,7 +329,10 @@ router.get('/:milestoneId', authMiddleware, async (req, res) => {
 // PUT /api/milestones/:milestoneId
 router.put('/:milestoneId', authMiddleware, async (req, res) => {
   try {
-    const milestone = await Milestone.findByPk(req.params.milestoneId);
+    const { milestoneId } = req.params;
+    const { is_completed, payment_status, ...otherUpdates } = req.body;
+
+    const milestone = await Milestone.findByPk(milestoneId);
 
     if (!milestone) {
       return res.status(404).json({
@@ -338,14 +341,38 @@ router.put('/:milestoneId', authMiddleware, async (req, res) => {
       });
     }
 
-    await milestone.update(req.body);
+    // 🔒 Prevent updating already completed milestone
+    if (milestone.is_completed && is_completed === true) {
+      return res.status(400).json({
+        success: false,
+        message: 'Milestone is already completed'
+      });
+    }
 
-    res.json({
+    const updateData = { ...otherUpdates };
+
+    // ✅ If marking as completed
+    if (is_completed === true) {
+      updateData.is_completed = true;
+      updateData.payment_status = "Paid";
+      updateData.completed_at = new Date();
+    }
+
+    // ✅ If manually changing payment status
+    if (payment_status) {
+      updateData.payment_status = payment_status;
+    }
+
+    await milestone.update(updateData);
+
+    res.status(200).json({
       success: true,
       message: 'Milestone updated successfully',
       data: milestone
     });
+
   } catch (error) {
+    console.error("Update Milestone Error:", error);
     res.status(500).json({
       success: false,
       message: 'Failed to update milestone',
@@ -353,6 +380,7 @@ router.put('/:milestoneId', authMiddleware, async (req, res) => {
     });
   }
 });
+
 // DELETE MILESTONE
 // DELETE /api/milestones/:milestoneId
 router.delete('/:milestoneId', authMiddleware, async (req, res) => {

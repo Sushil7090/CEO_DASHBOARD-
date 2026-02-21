@@ -133,7 +133,13 @@ module.exports = (sequelize, DataTypes) => {
     payment_terms: {
       type: DataTypes.STRING(50),
       allowNull: true
-    }
+    },
+    is_completed: {
+  type: DataTypes.BOOLEAN,
+  allowNull: false,
+  defaultValue: false
+}
+
 
   }, {
     tableName: 'milestones',
