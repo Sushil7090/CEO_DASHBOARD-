@@ -3,6 +3,7 @@ const router = express.Router();
 const { Milestone } = require('../../database/models');
 const { Project } = require('../../database/models');
 const authMiddleware = require('../middleware/auth.middleware');
+const { Op, fn, col } = require("sequelize");
 
 
  // Detect a date-like field safely:
@@ -129,6 +130,7 @@ router.get('/pending-milestones', authMiddleware, async (req, res) => {
         'project_id',
         'milestone_name',
         'actual_date',
+        'total_amount',
         'payment_status'
       ]
     });
@@ -139,6 +141,7 @@ router.get('/pending-milestones', authMiddleware, async (req, res) => {
       milestone_name: m.milestone_name,
       project_name: m.project ? m.project.project_name : null,
       actual_date: m.actual_date,
+      total_amount:m.total_amount,
       payment_status: m.payment_status
     }));
 
@@ -157,7 +160,32 @@ router.get('/pending-milestones', authMiddleware, async (req, res) => {
   }
 });
 
+// GET TOTAL REVENUE
+router.get('/total-revenue', authMiddleware, async (req, res) => {
+  try {
+    const result = await Milestone.findAll({
+      where: {
+        payment_status: 'Paid'
+      },
+      attributes: [
+        [fn('SUM', col('total_amount')), 'totalRevenue']
+      ],
+      raw: true
+    });
 
+    res.json({
+      success: true,
+      totalRevenue: result[0].totalRevenue || 0
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to calculate revenue",
+      error: error.message
+    });
+  }
+});
 // GET MILESTONES BY PROJECT
 // GET /api/milestones/project/:projectId
 router.get('/project/:projectId', authMiddleware, async (req, res) => {
