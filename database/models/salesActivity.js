@@ -2,7 +2,7 @@
 
 module.exports = (sequelize, DataTypes) => {
   const SalesActivity = sequelize.define(
-    'SalesActivity',
+    "SalesActivity",
     {
       activity_id: {
         type: DataTypes.UUID,
@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
       },
 
       activity_type: {
-        type: DataTypes.ENUM('Call', 'Meeting', 'Email', 'Demo', 'Proposal'),
+        type: DataTypes.ENUM("Call", "Meeting", "Email", "Demo", "Proposal"),
         allowNull: false,
       },
 
@@ -52,12 +52,12 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
-      tableName: 'sales_activities',
+      tableName: "sales_activities",
       timestamps: true,
-      createdAt: 'created_at',
-      updatedAt: 'updated_at',
+      createdAt: "created_at",
+      updatedAt: "updated_at",
       underscored: true,
-    }
+    },
   );
   return SalesActivity;
 };

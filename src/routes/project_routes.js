@@ -1,82 +1,73 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const {
-  Project,
-  ProjectTeamMember,
-  User,
-} = require('../../database/models');
+const { Project, ProjectTeamMember, User } = require("../../database/models");
 
-const Milestone = require('../../database/models/milestone')(
-  require('../../database/models').sequelize,
-  require('../../database/models').Sequelize.DataTypes
+const Milestone = require("../../database/models/milestone")(
+  require("../../database/models").sequelize,
+  require("../../database/models").Sequelize.DataTypes,
 );
 
-const authMiddleware = require('../middleware/auth.middleware');
+const authMiddleware = require("../middleware/auth.middleware");
 
-/* =========================
-   HELPERS
-========================= */
 const isValidUUID = (id) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    id
+    id,
   );
 
 /* =========================
    GET PROJECT TEAM MEMBERS
    GET /api/projects/team-members/:project_id
 ========================= */
-router.get('/team-members/:project_id', authMiddleware, async (req, res) => {
+router.get("/team-members/:project_id", authMiddleware, async (req, res) => {
   try {
     const { project_id } = req.params;
 
     if (!isValidUUID(project_id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid project_id format',
+        message: "Invalid project_id format",
       });
     }
 
     const teamMembers = await ProjectTeamMember.findAll({
       where: { project_id },
       attributes: [
-        'project_id',
-        'user_id',
-        'member_role',
-        'allocation_percentage',
-        'rate_per_hour',
-        'assigned_date',
-        'created_at',
-        'updated_at'
-      ]
+        "project_id",
+        "user_id",
+        "member_role",
+        "allocation_percentage",
+        "rate_per_hour",
+        "assigned_date",
+        "created_at",
+        "updated_at",
+      ],
     });
 
     return res.status(200).json({
       success: true,
       project_id,
-      message: 'Success',
+      message: "Success",
       data: teamMembers,
     });
-
   } catch (error) {
-    console.error('Get Team Members Error:', error);
+    console.error("Get Team Members Error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch project team members',
+      message: "Failed to fetch project team members",
       error: error.message,
     });
   }
 });
 
-
 /* =========================
    GET ALL PROJECTS
    GET /api/projects
 ========================= */
-router.get('/', authMiddleware, async (req, res) => {
+router.get("/", authMiddleware, async (req, res) => {
   try {
     const projects = await Project.findAll({
-      order: [['created_at', 'DESC']],
+      order: [["created_at", "DESC"]],
     });
 
     return res.status(200).json({
@@ -87,7 +78,7 @@ router.get('/', authMiddleware, async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Error fetching projects',
+      message: "Error fetching projects",
       error: error.message,
     });
   }
@@ -97,14 +88,14 @@ router.get('/', authMiddleware, async (req, res) => {
    GET SINGLE PROJECT
    GET /api/projects/:project_id
 ========================= */
-router.get('/:project_id', authMiddleware, async (req, res) => {
+router.get("/:project_id", authMiddleware, async (req, res) => {
   try {
     const { project_id } = req.params;
 
     if (!isValidUUID(project_id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid project_id format',
+        message: "Invalid project_id format",
       });
     }
 
@@ -115,7 +106,7 @@ router.get('/:project_id', authMiddleware, async (req, res) => {
     if (!project) {
       return res.status(404).json({
         success: false,
-        message: 'Project not found',
+        message: "Project not found",
       });
     }
 
@@ -126,7 +117,7 @@ router.get('/:project_id', authMiddleware, async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Error fetching project',
+      message: "Error fetching project",
       error: error.message,
     });
   }
@@ -136,14 +127,14 @@ router.get('/:project_id', authMiddleware, async (req, res) => {
    GET PROJECT WITH TEAM MEMBERS
    GET /api/projects/details/:project_id
 ========================= */
-router.get('/details/:project_id', authMiddleware, async (req, res) => {
+router.get("/details/:project_id", authMiddleware, async (req, res) => {
   try {
     const { project_id } = req.params;
 
     if (!isValidUUID(project_id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid project_id format',
+        message: "Invalid project_id format",
       });
     }
 
@@ -152,12 +143,12 @@ router.get('/details/:project_id', authMiddleware, async (req, res) => {
       include: [
         {
           model: ProjectTeamMember,
-          as: 'team_members',
+          as: "team_members",
           include: [
             {
               model: User,
-              as: 'user',
-              attributes: ['id', 'firstName', 'lastName', 'email', 'role'],
+              as: "user",
+              attributes: ["id", "firstName", "lastName", "email", "role"],
             },
           ],
         },
@@ -167,31 +158,30 @@ router.get('/details/:project_id', authMiddleware, async (req, res) => {
     if (!project) {
       return res.status(404).json({
         success: false,
-        message: 'Project not found',
+        message: "Project not found",
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: 'Project details fetched successfully',
+      message: "Project details fetched successfully",
       data: project,
     });
   } catch (error) {
-    console.error('Get Project Details Error:', error);
+    console.error("Get Project Details Error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch project details',
+      message: "Failed to fetch project details",
       error: error.message,
     });
   }
 });
 
-
 /* =========================
    CREATE PROJECT
    POST /api/projects
 ========================= */
-router.post('/', authMiddleware, async (req, res) => {
+router.post("/", authMiddleware, async (req, res) => {
   try {
     const {
       project_name,
@@ -216,8 +206,7 @@ router.post('/', authMiddleware, async (req, res) => {
     if (!project_name || !client_name || !project_owner) {
       return res.status(400).json({
         success: false,
-        message:
-          'Project name, client name, and project owner are required',
+        message: "Project name, client name, and project owner are required",
       });
     }
 
@@ -243,13 +232,13 @@ router.post('/', authMiddleware, async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Project created successfully',
+      message: "Project created successfully",
       data: newProject,
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Error creating project',
+      message: "Error creating project",
       error: error.message,
     });
   }
@@ -259,14 +248,14 @@ router.post('/', authMiddleware, async (req, res) => {
    UPDATE PROJECT
    PUT /api/projects/:project_id
 ========================= */
-router.put('/:project_id', authMiddleware, async (req, res) => {
+router.put("/:project_id", authMiddleware, async (req, res) => {
   try {
     const { project_id } = req.params;
 
     if (!isValidUUID(project_id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid project_id format',
+        message: "Invalid project_id format",
       });
     }
 
@@ -274,14 +263,14 @@ router.put('/:project_id', authMiddleware, async (req, res) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Unauthorized user',
+        message: "Unauthorized user",
       });
     }
 
-    if (!['Admin', 'Manager'].includes(user.role)) {
+    if (!["Admin", "Manager"].includes(user.role)) {
       return res.status(403).json({
         success: false,
-        message: 'Only Admin or Manager can update projects',
+        message: "Only Admin or Manager can update projects",
       });
     }
 
@@ -289,7 +278,7 @@ router.put('/:project_id', authMiddleware, async (req, res) => {
     if (!project) {
       return res.status(404).json({
         success: false,
-        message: 'Project not found',
+        message: "Project not found",
       });
     }
 
@@ -300,7 +289,7 @@ router.put('/:project_id', authMiddleware, async (req, res) => {
 
       for (const member of req.body.team_members) {
         const employee = await User.findOne({
-          where: { id: member.user_id, role: 'Employee' },
+          where: { id: member.user_id, role: "Employee" },
         });
 
         if (!employee) {
@@ -322,19 +311,19 @@ router.put('/:project_id', authMiddleware, async (req, res) => {
 
     const updatedProject = await Project.findOne({
       where: { project_id },
-      include: [{ model: ProjectTeamMember, as: 'team_members' }],
+      include: [{ model: ProjectTeamMember, as: "team_members" }],
     });
 
     return res.status(200).json({
       success: true,
-      message: 'Project updated successfully',
+      message: "Project updated successfully",
       data: updatedProject,
     });
   } catch (error) {
-    console.error('Update Project Error:', error);
+    console.error("Update Project Error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to update project',
+      message: "Failed to update project",
       error: error.message,
     });
   }
@@ -344,14 +333,14 @@ router.put('/:project_id', authMiddleware, async (req, res) => {
    DELETE PROJECT
    DELETE /api/projects/:project_id
 ========================= */
-router.delete('/:project_id', authMiddleware, async (req, res) => {
+router.delete("/:project_id", authMiddleware, async (req, res) => {
   try {
     const { project_id } = req.params;
 
     if (!isValidUUID(project_id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid project_id format',
+        message: "Invalid project_id format",
       });
     }
 
@@ -359,7 +348,7 @@ router.delete('/:project_id', authMiddleware, async (req, res) => {
     if (!project) {
       return res.status(404).json({
         success: false,
-        message: 'Project not found',
+        message: "Project not found",
       });
     }
 
@@ -367,13 +356,13 @@ router.delete('/:project_id', authMiddleware, async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Project deleted successfully',
+      message: "Project deleted successfully",
     });
   } catch (error) {
-    console.error('Delete Project Error:', error);
+    console.error("Delete Project Error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Something went wrong while deleting the project',
+      message: "Something went wrong while deleting the project",
     });
   }
 });
@@ -382,7 +371,7 @@ router.delete('/:project_id', authMiddleware, async (req, res) => {
    ADD PROJECT TEAM MEMBERS (Single or Multiple)
    POST /api/projects/team-members
 ========================= */
-router.post('/team-members', authMiddleware, async (req, res) => {
+router.post("/team-members", authMiddleware, async (req, res) => {
   try {
     let members = req.body;
 
@@ -394,7 +383,7 @@ router.post('/team-members', authMiddleware, async (req, res) => {
     if (members.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'At least one team member is required',
+        message: "At least one team member is required",
       });
     }
 
@@ -413,7 +402,7 @@ router.post('/team-members', authMiddleware, async (req, res) => {
       if (!project_id || !user_id) {
         return res.status(400).json({
           success: false,
-          message: 'project_id and user_id are required for each member',
+          message: "project_id and user_id are required for each member",
         });
       }
 
@@ -440,16 +429,15 @@ router.post('/team-members', authMiddleware, async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Project team members added successfully',
+      message: "Project team members added successfully",
       count: createdMembers.length,
       data: createdMembers,
     });
-
   } catch (error) {
-    console.error('Add Team Members Error:', error);
+    console.error("Add Team Members Error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to add project team members',
+      message: "Failed to add project team members",
       error: error.message,
     });
   }
@@ -459,14 +447,14 @@ router.post('/team-members', authMiddleware, async (req, res) => {
    GET PROJECT MILESTONES
    GET /api/projects/milestones/:project_id
 ========================= */
-router.get('/milestones/:project_id', authMiddleware, async (req, res) => {
+router.get("/milestones/:project_id", authMiddleware, async (req, res) => {
   try {
     const { project_id } = req.params;
 
     if (!isValidUUID(project_id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid project_id format',
+        message: "Invalid project_id format",
       });
     }
 
@@ -478,26 +466,26 @@ router.get('/milestones/:project_id', authMiddleware, async (req, res) => {
     if (!project) {
       return res.status(404).json({
         success: false,
-        message: 'Project not found',
+        message: "Project not found",
       });
     }
 
     const milestones = await Milestone.findAll({
       where: { project_id },
-      order: [['created_at', 'ASC']],
+      order: [["created_at", "ASC"]],
     });
 
     return res.status(200).json({
       success: true,
-      message: 'Milestones fetched successfully',
+      message: "Milestones fetched successfully",
       count: milestones.length,
       data: milestones,
     });
   } catch (error) {
-    console.error('Get Milestones Error:', error);
+    console.error("Get Milestones Error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch milestones',
+      message: "Failed to fetch milestones",
       error: error.message,
     });
   }

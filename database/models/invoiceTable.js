@@ -1,7 +1,6 @@
-
 module.exports = (sequelize, DataTypes) => {
   const Invoice = sequelize.define(
-    'Invoice',
+    "Invoice",
     {
       invoice_id: {
         type: DataTypes.UUID,
@@ -62,19 +61,19 @@ module.exports = (sequelize, DataTypes) => {
 
       currency: {
         type: DataTypes.STRING(10),
-        defaultValue: 'INR',
+        defaultValue: "INR",
       },
 
       invoice_status: {
         type: DataTypes.ENUM(
-          'Draft',
-          'Sent',
-          'Viewed',
-          'Paid',
-          'Overdue',
-          'Cancelled'
+          "Draft",
+          "Sent",
+          "Viewed",
+          "Paid",
+          "Overdue",
+          "Cancelled",
         ),
-        defaultValue: 'Draft',
+        defaultValue: "Draft",
       },
 
       sent_date: {
@@ -118,10 +117,10 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
-      tableName: 'invoices',
+      tableName: "invoices",
       timestamps: true,
       underscored: true,
-    }
+    },
   );
 
   return Invoice;

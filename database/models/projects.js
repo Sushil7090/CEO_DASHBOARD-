@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
 module.exports = (sequelize, DataTypes) => {
   const Project = sequelize.define(
-    'Project',
+    "Project",
     {
       project_id: {
         type: DataTypes.UUID,
@@ -24,20 +24,17 @@ module.exports = (sequelize, DataTypes) => {
 
       project_status: {
         type: DataTypes.ENUM(
-          'In Progress',
-          'Completed',
-          'On Hold',
-          'Cancelled'
+          "In Progress",
+          "Completed",
+          "On Hold",
+          "Cancelled",
         ),
         allowNull: false,
-        defaultValue: 'In Progress',
+        defaultValue: "In Progress",
       },
 
       category: {
-        type: DataTypes.ENUM(
-          'Digital Transformation',
-          'AI & ML'
-        ),
+        type: DataTypes.ENUM("Digital Transformation", "AI & ML"),
         allowNull: true,
       },
 
@@ -51,7 +48,6 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
 
-    
       start_date_planned: {
         type: DataTypes.DATEONLY,
         allowNull: true,
@@ -94,7 +90,7 @@ module.exports = (sequelize, DataTypes) => {
       currency: {
         type: DataTypes.STRING(10),
         allowNull: false,
-        defaultValue: 'INR',
+        defaultValue: "INR",
       },
 
       progress_percentage: {
@@ -104,9 +100,9 @@ module.exports = (sequelize, DataTypes) => {
       },
 
       priority: {
-        type: DataTypes.ENUM('High', 'Medium', 'Low'),
+        type: DataTypes.ENUM("High", "Medium", "Low"),
         allowNull: false,
-        defaultValue: 'Medium',
+        defaultValue: "Medium",
       },
 
       geography: {
@@ -115,10 +111,10 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
-      tableName: 'projects',
+      tableName: "projects",
       timestamps: true,
       underscored: true,
-    }
+    },
   );
 
   return Project;

@@ -1,8 +1,8 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { Phase } = require('../../database/models');
+const { Phase } = require("../../database/models");
 
-router.post('/', async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const {
       projectId,
@@ -11,13 +11,13 @@ router.post('/', async (req, res) => {
       endDate,
       status,
       budgetAllocated,
-      tasks
+      tasks,
     } = req.body;
 
     // Basic validation
     if (!projectId || !phaseName || !startDate || !endDate) {
       return res.status(400).json({
-        message: "projectId, phaseName, startDate and endDate are required"
+        message: "projectId, phaseName, startDate and endDate are required",
       });
     }
 
@@ -28,23 +28,22 @@ router.post('/', async (req, res) => {
       endDate,
       status: status || "Not Started",
       budgetAllocated: budgetAllocated || 0,
-      tasks: tasks || []
+      tasks: tasks || [],
     });
 
     res.status(201).json({
       message: "Phase created successfully",
-      data: phase
+      data: phase,
     });
-
   } catch (error) {
     console.log("ERROR:", error);
     res.status(500).json({
-      message: error.message
+      message: error.message,
     });
   }
 });
 
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const phases = await Phase.findAll();
     res.status(200).json(phases);
@@ -53,26 +52,23 @@ router.get('/', async (req, res) => {
   }
 });
 
-
-// ✅ 3️⃣ GET PHASES BY PROJECT ID
-router.get('/project/:projectId', async (req, res) => {
+// GET PHASES BY PROJECT ID
+router.get("/project/:projectId", async (req, res) => {
   try {
     const { projectId } = req.params;
 
     const phases = await Phase.findAll({
-      where: { projectId }
+      where: { projectId },
     });
 
     res.status(200).json(phases);
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-
-// ✅ 4️⃣ UPDATE PHASE
-router.put('/:id', async (req, res) => {
+//  UPDATE PHASE
+router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -86,17 +82,15 @@ router.put('/:id', async (req, res) => {
 
     res.status(200).json({
       message: "Phase updated successfully",
-      data: phase
+      data: phase,
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-
-// ✅ 5️⃣ DELETE PHASE
-router.delete('/:id', async (req, res) => {
+// DELETE PHASE
+router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -109,9 +103,8 @@ router.delete('/:id', async (req, res) => {
     await phase.destroy();
 
     res.status(200).json({
-      message: "Phase deleted successfully"
+      message: "Phase deleted successfully",
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

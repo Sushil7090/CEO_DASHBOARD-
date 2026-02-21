@@ -1,31 +1,31 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { Op } = require('sequelize');
+const { Op } = require("sequelize");
 
-const { Invoice } = require('../../database/models');
-   //Create New Invoice
-   //POST /api/invoices
-router.post('/', async (req, res) => {
+const { Invoice } = require("../../database/models");
+//Create New Invoice
+//POST /api/invoices
+router.post("/", async (req, res) => {
   try {
     const invoice = await Invoice.create(req.body);
 
     res.status(201).json({
       success: true,
-      message: 'Invoice created successfully',
-      data: invoice
+      message: "Invoice created successfully",
+      data: invoice,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Failed to create invoice',
-      error: error.message
+      message: "Failed to create invoice",
+      error: error.message,
     });
   }
 });
 
-   //Get All Invoices (with filters)
-   //GET /api/invoices?status=&fromDate=&toDate=
-router.get('/', async (req, res) => {
+//Get All Invoices (with filters)
+//GET /api/invoices?status=&fromDate=&toDate=
+router.get("/", async (req, res) => {
   try {
     const { status, fromDate, toDate } = req.query;
 
@@ -37,34 +37,34 @@ router.get('/', async (req, res) => {
 
     if (fromDate && toDate) {
       where.invoice_date = {
-        [Op.between]: [fromDate, toDate]
+        [Op.between]: [fromDate, toDate],
       };
     }
 
     const invoices = await Invoice.findAll({
       where,
-      order: [['created_at', 'DESC']]
+      order: [["created_at", "DESC"]],
     });
 
     res.json({ success: true, data: invoices });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch invoices',
-      error: error.message
+      message: "Failed to fetch invoices",
+      error: error.message,
     });
   }
 });
-    //Get Single Invoice
-   //GET /api/invoices/:id
-router.get('/:id', async (req, res) => {
+//Get Single Invoice
+//GET /api/invoices/:id
+router.get("/:id", async (req, res) => {
   try {
     const invoice = await Invoice.findByPk(req.params.id);
 
     if (!invoice) {
       return res.status(404).json({
         success: false,
-        message: 'Invoice not found'
+        message: "Invoice not found",
       });
     }
 
@@ -72,23 +72,23 @@ router.get('/:id', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch invoice',
-      error: error.message
+      message: "Failed to fetch invoice",
+      error: error.message,
     });
   }
 });
 
-   //Update Invoice
-   //PUT /api/invoices/:id
+//Update Invoice
+//PUT /api/invoices/:id
 
-router.put('/:id', async (req, res) => {
+router.put("/:id", async (req, res) => {
   try {
     const invoice = await Invoice.findByPk(req.params.id);
 
     if (!invoice) {
       return res.status(404).json({
         success: false,
-        message: 'Invoice not found'
+        message: "Invoice not found",
       });
     }
 
@@ -96,28 +96,28 @@ router.put('/:id', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Invoice updated successfully',
-      data: invoice
+      message: "Invoice updated successfully",
+      data: invoice,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Failed to update invoice',
-      error: error.message
+      message: "Failed to update invoice",
+      error: error.message,
     });
   }
 });
 
-   //Delete Invoice
-   //DELETE /api/invoices/:id
-router.delete('/:id', async (req, res) => {
+//Delete Invoice
+//DELETE /api/invoices/:id
+router.delete("/:id", async (req, res) => {
   try {
     const invoice = await Invoice.findByPk(req.params.id);
 
     if (!invoice) {
       return res.status(404).json({
         success: false,
-        message: 'Invoice not found'
+        message: "Invoice not found",
       });
     }
 
@@ -125,70 +125,72 @@ router.delete('/:id', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Invoice deleted successfully'
+      message: "Invoice deleted successfully",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Failed to delete invoice',
-      error: error.message
+      message: "Failed to delete invoice",
+      error: error.message,
     });
   }
 });
 
-   //Get Invoices by Project
-   //GET /api/invoices/project/:projectId
+//Get Invoices by Project
+//GET /api/invoices/project/:projectId
 
-router.get('/project/:projectId', async (req, res) => {
+router.get("/project/:projectId", async (req, res) => {
   try {
     const invoices = await Invoice.findAll({
       where: { project_id: req.params.projectId },
-      order: [['invoice_date', 'DESC']]
+      order: [["invoice_date", "DESC"]],
     });
 
     res.json({ success: true, data: invoices });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch project invoices',
-      error: error.message
+      message: "Failed to fetch project invoices",
+      error: error.message,
     });
   }
 });
-   //Get Overdue Invoices
-   //GET /api/invoices/overdue
-router.get('/status/overdue', async (req, res) => {
+//Get Overdue Invoices
+//GET /api/invoices/overdue
+router.get("/status/overdue", async (req, res) => {
   try {
     const today = new Date();
 
     const invoices = await Invoice.findAll({
       where: {
         due_date: { [Op.lt]: today },
-        invoice_status: { [Op.not]: 'Paid' }
-      }
+        invoice_status: { [Op.not]: "Paid" },
+      },
     });
 
     res.json({ success: true, data: invoices });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch overdue invoices',
-      error: error.message
+      message: "Failed to fetch overdue invoices",
+      error: error.message,
     });
   }
 });
 
-   //Get Invoice Statistics
-   //GET /api/invoices/stats/summary
-router.get('/stats/summary', async (req, res) => {
+//Get Invoice Statistics
+//GET /api/invoices/stats/summary
+router.get("/stats/summary", async (req, res) => {
   try {
     const totalInvoices = await Invoice.count();
-    const paidInvoices = await Invoice.count({ where: { invoice_status: 'Paid' } });
+    const paidInvoices = await Invoice.count({
+      where: { invoice_status: "Paid" },
+    });
     const overdueInvoices = await Invoice.count({
       where: {
         due_date: { [Op.lt]: new Date() },
-        invoice_status: { [Op.not]: 'Paid' }
-      }
+        invoice_status: { [Op.not]: "Paid" },
+      },
     });
 
     res.json({
@@ -196,14 +198,14 @@ router.get('/stats/summary', async (req, res) => {
       data: {
         totalInvoices,
         paidInvoices,
-        overdueInvoices
-      }
+        overdueInvoices,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch invoice statistics',
-      error: error.message
+      message: "Failed to fetch invoice statistics",
+      error: error.message,
     });
   }
 });

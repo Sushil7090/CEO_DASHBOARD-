@@ -1,12 +1,12 @@
-'use strict';
-const { Model } = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
   class Phase extends Model {
     static associate(models) {
       Phase.belongsTo(models.Project, {
-        foreignKey: 'projectId',
-        as: 'project',
+        foreignKey: "projectId",
+        as: "project",
       });
     }
   }
@@ -40,8 +40,8 @@ module.exports = (sequelize, DataTypes) => {
       },
 
       status: {
-        type: DataTypes.ENUM('Not Started', 'In Progress', 'Completed'),
-        defaultValue: 'Not Started',
+        type: DataTypes.ENUM("Not Started", "In Progress", "Completed"),
+        defaultValue: "Not Started",
       },
 
       budgetAllocated: {
@@ -50,14 +50,14 @@ module.exports = (sequelize, DataTypes) => {
       },
 
       tasks: {
-        type: DataTypes.JSON,   // 👈 important
+        type: DataTypes.JSON, // 👈 important
         allowNull: true,
       },
     },
     {
       sequelize,
-      modelName: 'Phase',
-    }
+      modelName: "Phase",
+    },
   );
 
   return Phase;

@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
   const Expense = sequelize.define(
-    'Expense',
+    "Expense",
     {
       expense_id: {
         type: DataTypes.UUID,
@@ -15,12 +15,12 @@ module.exports = (sequelize, DataTypes) => {
 
       expense_category: {
         type: DataTypes.ENUM(
-          'Software Licenses',
-          'Travel',
-          'Contractor Fees',
-          'Hardware',
-          'Office Supplies',
-          'Other'
+          "Software Licenses",
+          "Travel",
+          "Contractor Fees",
+          "Hardware",
+          "Office Supplies",
+          "Other",
         ),
         allowNull: false,
       },
@@ -42,7 +42,7 @@ module.exports = (sequelize, DataTypes) => {
 
       currency: {
         type: DataTypes.STRING(10),
-        defaultValue: 'INR',
+        defaultValue: "INR",
       },
 
       vendor_name: {
@@ -52,13 +52,13 @@ module.exports = (sequelize, DataTypes) => {
 
       payment_status: {
         type: DataTypes.ENUM(
-          'Pending',
-          'Paid',
-          'Approved',
-          'Rejected',
-          'Reimbursed'
+          "Pending",
+          "Paid",
+          "Approved",
+          "Rejected",
+          "Reimbursed",
         ),
-        defaultValue: 'Pending',
+        defaultValue: "Pending",
       },
 
       receipt_url: {
@@ -107,10 +107,10 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
-      tableName: 'expenses',
+      tableName: "expenses",
       timestamps: true,
       underscored: true,
-    }
+    },
   );
 
   return Expense;

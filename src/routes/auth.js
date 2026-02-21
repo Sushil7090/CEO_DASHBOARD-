@@ -1,28 +1,28 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { User } = require('../../database/models');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const { User } = require("../../database/models");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 // SIGNUP ROUTE
 // POST /api/auth/signup
-router.post('/signup', async (req, res) => {
+router.post("/signup", async (req, res) => {
   try {
     const { firstName, lastName, email, role } = req.body;
 
     if (!firstName || !lastName || !email || !role) {
       return res.status(400).json({
         success: false,
-        message: 'All fields are required'
+        message: "All fields are required",
       });
     }
 
-    // role validation 
-    const allowedRoles = ['admin', 'manager', 'employee'];
+    // role validation
+    const allowedRoles = ["admin", "manager", "employee"];
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid role'
+        message: "Invalid role",
       });
     }
 
@@ -31,11 +31,11 @@ router.post('/signup', async (req, res) => {
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: 'Email already registered'
+        message: "Email already registered",
       });
     }
 
-    // 🔹 Auto-generate password (example: aishwarya@123)
+    //Auto-generate password (example: aishwarya@123)
     const autoPassword = `${firstName.toLowerCase()}@123`;
 
     // Hash password
@@ -47,59 +47,56 @@ router.post('/signup', async (req, res) => {
       lastName,
       email,
       password: hashedPassword,
-      role
+      role,
     });
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: "User registered successfully",
       generatedPassword: autoPassword, // send this once (optional)
       user: {
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        role: user.role
-      }
+        role: user.role,
+      },
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({
       success: false,
-      message: 'Signup failed'
+      message: "Signup failed",
     });
   }
 });
 
-
-
 // LOGIN ROUTE
 // POST /api/auth/login
 
-router.post('/login', async (req, res) => {
+router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email ) {
+    if (!email) {
       return res.status(400).json({
         success: false,
-        message: 'Email is required'
+        message: "Email is required",
       });
     }
-      
-    if(!password)
-    {return  res.status(400).json({
+
+    if (!password) {
+      return res.status(400).json({
         success: false,
-        message: 'Password is required'
+        message: "Password is required",
       });
     }
-     
+
     const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email'
+        message: "Invalid email",
       });
     }
 
@@ -108,40 +105,38 @@ router.post('/login', async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid password'
+        message: "Invalid password",
       });
     }
 
     const token = jwt.sign(
       {
         user_id: user.id,
-        email: user.email
+        email: user.email,
       },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      { expiresIn: process.env.JWT_EXPIRES_IN },
     );
 
     res.json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       token,
       user: {
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        role: user.role
-      }
+        role: user.role,
+      },
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({
       success: false,
-      message: 'Login failed'
+      message: "Login failed",
     });
   }
 });
-
 
 module.exports = router;
