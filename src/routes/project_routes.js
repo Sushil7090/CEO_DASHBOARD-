@@ -42,6 +42,13 @@ router.get("/team-members/:project_id", authMiddleware, async (req, res) => {
         "created_at",
         "updated_at",
       ],
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "firstName", "lastName", "email", "salary"]
+        }
+      ]
     });
 
     return res.status(200).json({
@@ -50,6 +57,7 @@ router.get("/team-members/:project_id", authMiddleware, async (req, res) => {
       message: "Success",
       data: teamMembers,
     });
+
   } catch (error) {
     console.error("Get Team Members Error:", error);
     return res.status(500).json({
@@ -59,6 +67,7 @@ router.get("/team-members/:project_id", authMiddleware, async (req, res) => {
     });
   }
 });
+
 
 /* =========================
    GET ALL PROJECTS
@@ -148,7 +157,14 @@ router.get("/details/:project_id", authMiddleware, async (req, res) => {
             {
               model: User,
               as: "user",
-              attributes: ["id", "firstName", "lastName", "email", "role"],
+              attributes: [
+                "id",
+                "firstName",
+                "lastName",
+                "email",
+                "role",
+                "salary"   // 👈 Added here
+              ],
             },
           ],
         },
@@ -167,6 +183,7 @@ router.get("/details/:project_id", authMiddleware, async (req, res) => {
       message: "Project details fetched successfully",
       data: project,
     });
+
   } catch (error) {
     console.error("Get Project Details Error:", error);
     return res.status(500).json({

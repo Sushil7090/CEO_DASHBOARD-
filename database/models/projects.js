@@ -116,6 +116,13 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true,
     },
   );
+  Project.associate = function (models) {
+  Project.hasMany(models.ProjectTeamMember, {
+    foreignKey: "project_id",
+    sourceKey: "project_id",
+    as: "team_members",
+  });
+};
 
   return Project;
 };
