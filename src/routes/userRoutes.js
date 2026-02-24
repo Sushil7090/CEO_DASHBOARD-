@@ -13,7 +13,7 @@ console.log("usersRoutes.js loaded");
 router.get("/", authenticateJWT, async (req, res) => {
   try {
     const users = await User.findAll({
-      attributes: ["id", "firstName", "lastName", "email", "role"],
+      attributes: ["id", "firstName", "lastName", "email", "role", "salary"],
     });
 
     res.status(200).json({
@@ -38,7 +38,7 @@ router.get("/:user_id", authenticateJWT, async (req, res) => {
 
     const user = await User.findOne({
       where: { id: user_id },
-      attributes: ["id", "firstName", "lastName", "email", "role"],
+      attributes: ["id", "firstName", "lastName", "email", "role", "salary"],
     });
 
     if (!user) {

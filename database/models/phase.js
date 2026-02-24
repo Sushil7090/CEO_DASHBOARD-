@@ -50,7 +50,7 @@ module.exports = (sequelize, DataTypes) => {
       },
 
       tasks: {
-        type: DataTypes.JSON, // 👈 important
+        type: DataTypes.JSON, 
         allowNull: true,
       },
     },
