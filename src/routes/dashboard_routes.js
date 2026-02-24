@@ -6,11 +6,90 @@ const {
   Invoice,
   Expense,
   SalesTeam,
+  Milestone,
+  sequelize,   
 } = require("../../database/models");
+
 //import milestone
-const { Milestone } = require("../../database/models");
 const { Sequelize } = require("sequelize");
 
+/* =====================================================
+    AUTO INDEX CREATION (RUNS ON SERVER START)
+   ===================================================== */
+
+async function ensureIndexes() {
+  const queryInterface = sequelize.getQueryInterface();
+
+  // -------- MILESTONES --------
+  const milestoneIndexes = await queryInterface.showIndex("milestones");
+  const milestoneNames = milestoneIndexes.map((i) => i.name);
+
+  if (!milestoneNames.includes("idx_milestones_payment_status")) {
+    await queryInterface.addIndex("milestones", ["payment_status"], {
+      name: "idx_milestones_payment_status",
+    });
+  }
+
+  if (!milestoneNames.includes("idx_milestones_project_id")) {
+    await queryInterface.addIndex("milestones", ["project_id"], {
+      name: "idx_milestones_project_id",
+    });
+  }
+
+  if (!milestoneNames.includes("idx_milestones_created_at")) {
+    await queryInterface.addIndex("milestones", ["created_at"], {
+      name: "idx_milestones_created_at",
+    });
+  }
+
+  if (!milestoneNames.includes("idx_milestones_project_payment_created")) {
+    await queryInterface.addIndex(
+      "milestones",
+      ["project_id", "payment_status", "created_at"],
+      {
+        name: "idx_milestones_project_payment_created",
+      }
+    );
+  }
+
+  // -------- PROJECTS --------
+  const projectIndexes = await queryInterface.showIndex("projects");
+  const projectNames = projectIndexes.map((i) => i.name);
+
+  if (!projectNames.includes("idx_projects_project_status")) {
+    await queryInterface.addIndex("projects", ["project_status"], {
+      name: "idx_projects_project_status",
+    });
+  }
+
+  // -------- SALES DEALS --------
+  const salesIndexes = await queryInterface.showIndex("sales_deals");
+  const salesNames = salesIndexes.map((i) => i.name);
+
+  if (!salesNames.includes("idx_sales_deals_pipeline_stage")) {
+    await queryInterface.addIndex("sales_deals", ["pipeline_stage"], {
+      name: "idx_sales_deals_pipeline_stage",
+    });
+  }
+
+  // -------- PROJECT TEAM MEMBERS --------
+  const teamIndexes = await queryInterface.showIndex("project_team_members");
+  const teamNames = teamIndexes.map((i) => i.name);
+
+  if (!teamNames.includes("idx_project_team_members_project_id")) {
+    await queryInterface.addIndex("project_team_members", ["project_id"], {
+      name: "idx_project_team_members_project_id",
+    });
+  }
+
+  console.log("✅ Index verification completed");
+}
+
+// Run once when server starts
+ensureIndexes().catch((err) =>
+  console.error("Index creation error:", err)
+);
+/////
 router.get("/overview", async (req, res) => {
   try {
     const projects = await Project.findAll({ raw: true });
