@@ -7,10 +7,11 @@ cron.schedule("0 9 * * *", async () => {
   console.log("Running phase reminder cron...");
 
   try {
-    const testDate = new Date("2026-02-28");
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const startOfDay = new Date(testDate.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(testDate.setHours(23, 59, 59, 999));
+    const startOfDay = new Date(tomorrow.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(tomorrow.setHours(23, 59, 59, 999));
 
     const phases = await Phase.findAll({
       where: {
