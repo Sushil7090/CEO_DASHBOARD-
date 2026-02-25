@@ -8,6 +8,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "projectId",
         as: "project",
       });
+      Phase.hasMany(models.PhaseTeamMember, {
+        foreignKey: "phase_id",
+        as: "phaseTeamMembers",
+      });
     }
   }
 
@@ -50,7 +54,7 @@ module.exports = (sequelize, DataTypes) => {
       },
 
       tasks: {
-        type: DataTypes.JSON, 
+        type: DataTypes.JSON,
         allowNull: true,
       },
     },

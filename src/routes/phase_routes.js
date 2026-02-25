@@ -190,10 +190,33 @@ router.get("/:phaseId/members", async (req, res) => {
 
 router.get("/", async (req, res) => {
   try {
-    const phases = await Phase.findAll();
-    res.status(200).json(phases);
+    const phases = await Phase.findAll({
+      include: [
+        {
+          model: PhaseTeamMember,
+          as: "phaseTeamMembers",
+          include: [
+            {
+              model: User,
+              as: "user",
+              attributes: ["id", "firstName", "email"],
+            },
+          ],
+        },
+      ],
+    });
+
+    res.status(200).json({
+      success: true,
+      data: phases,
+    });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 });
 
