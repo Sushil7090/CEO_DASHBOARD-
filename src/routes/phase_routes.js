@@ -199,7 +199,7 @@ router.get("/", async (req, res) => {
             {
               model: User,
               as: "user",
-              attributes: ["id", "firstName", "email"],
+              attributes: ["id", "firstName", "email","salary"],
             },
           ],
         },
