@@ -7,51 +7,41 @@ const {
   PhaseTeamMember,
   User,
 } = require("../../database/models");
-router.post("/", async (req, res) => {
+const authMiddleware = require("../middleware/auth.middleware");
+router.post("/", authMiddleware, async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
-    const { projectId, phaseName, startDate, endDate } = req.body;
-
-    if (!projectId || !phaseName || !startDate || !endDate) {
-      return res.status(400).json({
-        success: false,
-        message: "All fields are required",
-      });
-    }
+    const { phaseName, projectId, startDate, endDate, team_members } = req.body;
 
     const phase = await Phase.create(
       {
-        projectId,
         phaseName,
+        projectId,
         startDate,
         endDate,
       },
       { transaction },
     );
 
-    const projectUsers = await ProjectTeamMember.findAll({
-      where: { project_id: projectId },
-      transaction,
-    });
+    if (team_members && team_members.length > 0) {
+      const phaseMembers = team_members.map((member) => {
+        const monthlyCost =
+          member.hourly_rate *
+          (member.working_hours_per_month || 160) *
+          (member.allocation || 1);
 
-    const phaseMembers = projectUsers.map((member) => {
-      const allocation = 1.0;
-      const hours = 160;
-      const rate = member.hourly_rate || 0;
+        return {
+          phase_id: phase.id,
+          project_id: phase.projectId,
+          user_id: member.user_id,
+          hourly_rate: member.hourly_rate,
+          allocation: member.allocation || 1,
+          working_hours_per_month: member.working_hours_per_month || 160,
+          monthly_cost: monthlyCost,
+        };
+      });
 
-      return {
-        phase_id: phase.id,
-        project_id: projectId,
-        user_id: member.user_id,
-        allocation,
-        hourly_rate: rate,
-        working_hours_per_month: hours,
-        monthly_cost: rate * hours * allocation,
-      };
-    });
-
-    if (phaseMembers.length > 0) {
       await PhaseTeamMember.bulkCreate(phaseMembers, {
         transaction,
       });
@@ -62,8 +52,104 @@ router.post("/", async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Phase created successfully",
-      assigned_users: phaseMembers.length,
-      data: phase,
+      phase,
+    });
+  } catch (error) {
+    await transaction.rollback();
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+router.put("/:phaseId", authMiddleware, async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const { phaseId } = req.params;
+    const { phaseName, team_members } = req.body;
+
+    const phase = await Phase.findByPk(phaseId);
+
+    if (!phase) {
+      return res.status(404).json({
+        success: false,
+        message: "Phase not found",
+      });
+    }
+
+    if (phaseName) {
+      await phase.update({ phaseName }, { transaction });
+    }
+
+    if (team_members) {
+      const existingMembers = await PhaseTeamMember.findAll({
+        where: { phase_id: phaseId },
+        transaction,
+      });
+
+      const existingUserIds = existingMembers.map((m) => m.user_id);
+      const newUserIds = team_members.map((m) => m.user_id);
+
+      const usersToRemove = existingUserIds.filter(
+        (id) => !newUserIds.includes(id),
+      );
+
+      if (usersToRemove.length > 0) {
+        await PhaseTeamMember.destroy({
+          where: {
+            phase_id: phaseId,
+            user_id: usersToRemove,
+          },
+          transaction,
+        });
+      }
+
+      for (const member of team_members) {
+        const monthlyCost =
+          member.hourly_rate *
+          (member.working_hours_per_month || 160) *
+          (member.allocation || 1);
+
+        const existing = existingMembers.find(
+          (m) => m.user_id === member.user_id,
+        );
+
+        if (existing) {
+          // UPDATE
+          await existing.update(
+            {
+              hourly_rate: member.hourly_rate,
+              allocation: member.allocation || 1,
+              working_hours_per_month: member.working_hours_per_month || 160,
+              monthly_cost: monthlyCost,
+            },
+            { transaction },
+          );
+        } else {
+          // ADD NEW
+          await PhaseTeamMember.create(
+            {
+              phase_id: phaseId,
+              project_id: phase.projectId,
+              user_id: member.user_id,
+              hourly_rate: member.hourly_rate,
+              allocation: member.allocation || 1,
+              working_hours_per_month: member.working_hours_per_month || 160,
+              monthly_cost: monthlyCost,
+            },
+            { transaction },
+          );
+        }
+      }
+    }
+
+    await transaction.commit();
+
+    res.json({
+      success: true,
+      message: "Phase updated successfully",
     });
   } catch (error) {
     await transaction.rollback();
@@ -121,28 +207,6 @@ router.get("/project/:projectId", async (req, res) => {
     });
 
     res.status(200).json(phases);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-//  UPDATE PHASE
-router.put("/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const phase = await Phase.findByPk(id);
-
-    if (!phase) {
-      return res.status(404).json({ message: "Phase not found" });
-    }
-
-    await phase.update(req.body);
-
-    res.status(200).json({
-      message: "Phase updated successfully",
-      data: phase,
-    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
