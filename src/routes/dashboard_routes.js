@@ -92,96 +92,111 @@ ensureIndexes().catch((err) =>
 /////
 router.get("/overview", async (req, res) => {
   try {
-    const projects = await Project.findAll({ raw: true });
-    const deals = await SalesDeal.findAll({ raw: true });
-    const invoices = await Invoice.findAll({ raw: true });
-    const reps = await SalesTeam.findAll({
-      where: { is_active: true },
-      raw: true,
-    });
 
-    const forceNumber = (v) => {
-      if (v === null || v === undefined) return 0;
-      const n = Number(v);
-      return isNaN(n) ? 0 : n;
-    };
+    const [
+      totalProjects,
+      inProgressProjects,
+      completedProjects,
 
-    let totalCost = 0;
-    let totalBudget = 0;
+      totalCost,
+      totalBudget,
 
-    projects.forEach((p) => {
-      totalCost += forceNumber(p.total_cost_to_date);
-      totalBudget += forceNumber(p.total_budget);
-    });
+      totalRevenue,
 
-    //  FIXED MILESTONE QUERY
-    const milestoneRevenue = await Milestone.findAll({
-      where: { payment_status: "Paid" },
-      attributes: [
-        [
-          Sequelize.fn(
-            "COALESCE",
-            Sequelize.fn("SUM", Sequelize.col("total_amount")),
-            0,
-          ),
-          "total_revenue",
-        ],
-      ],
-      raw: true,
-    });
-    const totalRevenue = forceNumber(milestoneRevenue?.total_revenue);
-    const totalProfit = totalRevenue - totalCost;
+      totalDeals,
+      closedWonDeals,
+      activePipelineDeals,
+
+      pendingInvoices,
+      overdueInvoices,
+
+      activeReps
+    ] = await Promise.all([
+
+      Project.count(),
+      Project.count({ where: { project_status: "In Progress" } }),
+      Project.count({ where: { project_status: "Completed" } }),
+
+      Project.sum("total_cost_to_date"),
+      Project.sum("total_budget"),
+
+      Milestone.sum("total_amount", {
+        where: { payment_status: "Paid" }
+      }),
+
+      SalesDeal.count(),
+      SalesDeal.count({ where: { pipeline_stage: "Closed Won" } }),
+      SalesDeal.count({
+        where: {
+          pipeline_stage: {
+            [Sequelize.Op.notIn]: ["Closed Won", "Closed Lost"]
+          }
+        }
+      }),
+
+      Invoice.count({
+        where: {
+          invoice_status: ["Draft",
+          "Sent",
+          "Viewed",
+          "Paid",
+          "Overdue",
+          "Cancelled",]
+        }
+      }),
+
+      Invoice.count({ where: { invoice_status: "Overdue" } }),
+
+      SalesTeam.count({ where: { is_active: true } })
+    ]);
+
+    const cost = Number(totalCost || 0);
+    const revenue = Number(totalRevenue || 0);
+    const profit = revenue - cost;
 
     const averageROI =
-      totalCost > 0 ? Number(((totalProfit / totalCost) * 100).toFixed(2)) : 0;
+      cost > 0 ? Number(((profit / cost) * 100).toFixed(2)) : 0;
 
-    return res.json({
+    res.json({
       success: true,
       data: {
         projects: {
-          total: projects.length,
-          in_progress: projects.filter(
-            (p) => p.project_status === "In Progress",
-          ).length,
-          completed: projects.filter((p) => p.project_status === "Completed")
-            .length,
+          total: totalProjects,
+          in_progress: inProgressProjects,
+          completed: completedProjects,
         },
         financial: {
-          total_revenue: Number(totalRevenue.toFixed(2)),
-          total_cost: Number(totalCost.toFixed(2)),
-          total_budget: Number(totalBudget.toFixed(2)),
-          total_profit: Number(totalProfit.toFixed(2)),
+          total_revenue: revenue,
+          total_cost: cost,
+          total_budget: Number(totalBudget || 0),
+          total_profit: profit,
           average_roi: averageROI,
           currency: "INR",
         },
         sales: {
-          total_deals: deals.length,
-          closed_won: deals.filter((d) => d.pipeline_stage === "Closed Won")
-            .length,
-          active_pipeline: deals.filter(
-            (d) => !["Closed Won", "Closed Lost"].includes(d.pipeline_stage),
-          ).length,
+          total_deals: totalDeals,
+          closed_won: closedWonDeals,
+          active_pipeline: activePipelineDeals,
         },
         invoices: {
-          pending: invoices.filter((i) =>
-            ["Sent", "Viewed", "Pending", "Unpaid"].includes(i.invoice_status),
-          ).length,
-          overdue: invoices.filter((i) => i.invoice_status === "Overdue")
-            .length,
+          pending: pendingInvoices,
+          overdue: overdueInvoices,
         },
         team: {
-          active_sales_reps: reps.length,
+          active_sales_reps: activeReps,
         },
       },
     });
+
   } catch (err) {
     console.error("Dashboard Overview Error:", err);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: err.message,
     });
   }
 });
+
 // FINANCIAL SUMMARY
 ///api/dashboard/financial-summary
 router.get("/financial-summary", async (req, res) => {
