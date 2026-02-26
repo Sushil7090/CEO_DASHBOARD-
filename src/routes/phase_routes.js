@@ -70,9 +70,10 @@ router.put("/:phaseId", authMiddleware, async (req, res) => {
     const { phaseId } = req.params;
     const { phaseName, team_members } = req.body;
 
-    const phase = await Phase.findByPk(phaseId);
+    const phase = await Phase.findByPk(phaseId, { transaction });
 
     if (!phase) {
+      await transaction.rollback();
       return res.status(404).json({
         success: false,
         message: "Phase not found",
@@ -84,72 +85,45 @@ router.put("/:phaseId", authMiddleware, async (req, res) => {
     }
 
     if (team_members) {
-      const existingMembers = await PhaseTeamMember.findAll({
+      // Remove all existing members
+      await PhaseTeamMember.destroy({
         where: { phase_id: phaseId },
         transaction,
       });
 
-      const existingUserIds = existingMembers.map((m) => m.user_id);
-      const newUserIds = team_members.map((m) => m.user_id);
-
-      const usersToRemove = existingUserIds.filter(
-        (id) => !newUserIds.includes(id),
-      );
-
-      if (usersToRemove.length > 0) {
-        await PhaseTeamMember.destroy({
-          where: {
-            phase_id: phaseId,
-            user_id: usersToRemove,
-          },
-          transaction,
-        });
-      }
-
-      for (const member of team_members) {
-        const monthlyCost =
+      // Add new ones
+      const newMembers = team_members.map((member) => ({
+        phase_id: phaseId,
+        project_id: phase.projectId,
+        user_id: member.user_id,
+        hourly_rate: member.hourly_rate,
+        allocation: member.allocation || 1,
+        working_hours_per_month: member.working_hours_per_month || 160,
+        monthly_cost:
           member.hourly_rate *
           (member.working_hours_per_month || 160) *
-          (member.allocation || 1);
+          (member.allocation || 1),
+      }));
 
-        const existing = existingMembers.find(
-          (m) => m.user_id === member.user_id,
-        );
-
-        if (existing) {
-          // UPDATE
-          await existing.update(
-            {
-              hourly_rate: member.hourly_rate,
-              allocation: member.allocation || 1,
-              working_hours_per_month: member.working_hours_per_month || 160,
-              monthly_cost: monthlyCost,
-            },
-            { transaction },
-          );
-        } else {
-          // ADD NEW
-          await PhaseTeamMember.create(
-            {
-              phase_id: phaseId,
-              project_id: phase.projectId,
-              user_id: member.user_id,
-              hourly_rate: member.hourly_rate,
-              allocation: member.allocation || 1,
-              working_hours_per_month: member.working_hours_per_month || 160,
-              monthly_cost: monthlyCost,
-            },
-            { transaction },
-          );
-        }
-      }
+      await PhaseTeamMember.bulkCreate(newMembers, { transaction });
     }
 
     await transaction.commit();
 
+    // ✅ Fetch updated data
+    const updatedPhase = await Phase.findByPk(phaseId, {
+      include: [
+        {
+          model: PhaseTeamMember,
+          as: "phaseTeamMembers", // must match your alias
+        },
+      ],
+    });
+
     res.json({
       success: true,
       message: "Phase updated successfully",
+      data: updatedPhase,
     });
   } catch (error) {
     await transaction.rollback();
@@ -199,7 +173,7 @@ router.get("/", async (req, res) => {
             {
               model: User,
               as: "user",
-              attributes: ["id", "firstName", "email","salary"],
+              attributes: ["id", "firstName", "email", "salary"],
             },
           ],
         },
@@ -210,7 +184,6 @@ router.get("/", async (req, res) => {
       success: true,
       data: phases,
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -225,13 +198,34 @@ router.get("/project/:projectId", async (req, res) => {
   try {
     const { projectId } = req.params;
 
+    if (!projectId) {
+      return res.status(400).json({
+        success: false,
+        message: "Project ID is required",
+      });
+    }
+
     const phases = await Phase.findAll({
       where: { projectId },
+      include: [
+        {
+          model: PhaseTeamMember,
+          as: "phaseTeamMembers",
+        },
+      ],
+      order: [["createdAt", "ASC"]],
     });
 
-    res.status(200).json(phases);
+    return res.status(200).json({
+      success: true,
+      count: phases.length,
+      data: phases,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 });
 
