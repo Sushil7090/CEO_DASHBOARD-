@@ -12,53 +12,85 @@ router.post("/", authMiddleware, async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
-    const { 
-      phaseName, 
-      projectId, 
-      startDate, 
-      endDate, 
-      budgetAllocated,   
-      team_members 
+    const {
+      phaseName,
+      projectId,
+      startDate,
+      endDate,
+      budgetAllocated,
+      team_members,
     } = req.body;
 
+    // ✅ Create Phase
     const phase = await Phase.create(
       {
         phaseName,
         projectId,
         startDate,
         endDate,
-        budgetAllocated   
+        budgetAllocated,
       },
-      { transaction }
+      { transaction },
     );
 
-    if (team_members && team_members.length > 0) {
-      const phaseMembers = team_members.map((member) => {
-        const monthlyCost =
-          member.hourly_rate *
-          (member.working_hours_per_month || 160) *
-          (member.allocation || 1);
+    let membersToInsert = [];
 
-        return {
-          phase_id: phase.id,
-          project_id: phase.projectId,
-          user_id: member.user_id,
-          hourly_rate: member.hourly_rate,
-          allocation: member.allocation || 1,
-          working_hours_per_month: member.working_hours_per_month || 160,
-          monthly_cost: monthlyCost,
-        };
+    // ============================================
+    // ✅ OPTION 1: If manual team_members provided
+    // ============================================
+    if (team_members && team_members.length > 0) {
+      membersToInsert = team_members.map((member) => ({
+        phase_id: phase.id,
+        project_id: projectId,
+        user_id: member.user_id,
+        hourly_rate: member.hourly_rate || 0,
+        allocation: member.allocation || 1,
+        working_hours_per_month: member.working_hours_per_month || 160,
+        monthly_cost:
+          (member.hourly_rate || 0) *
+          (member.working_hours_per_month || 160) *
+          (member.allocation || 1),
+      }));
+    } else {
+      // ==================================================
+      // ✅ OPTION 2: Auto assign all project team members
+      // ==================================================
+
+      const projectMembers = await ProjectTeamMember.findAll({
+        where: { project_id: projectId },
+        transaction,
       });
 
-      await PhaseTeamMember.bulkCreate(phaseMembers, { transaction });
+      membersToInsert = projectMembers.map((member) => ({
+        phase_id: phase.id,
+        project_id: projectId,
+        user_id: member.user_id,
+        hourly_rate: member.hourly_rate || 0,
+        allocation: 1,
+        working_hours_per_month: 160,
+        monthly_cost: monthly_cost,
+      }));
+    }
+
+    if (membersToInsert.length > 0) {
+      await PhaseTeamMember.bulkCreate(membersToInsert, { transaction });
     }
 
     await transaction.commit();
 
+    const createdPhase = await Phase.findByPk(phase.id, {
+      include: [
+        {
+          model: PhaseTeamMember,
+          as: "phaseTeamMembers",
+        },
+      ],
+    });
+
     res.status(201).json({
       success: true,
       message: "Phase created successfully",
-      phase,
+      phase: createdPhase,
     });
   } catch (error) {
     await transaction.rollback();
@@ -69,14 +101,21 @@ router.post("/", authMiddleware, async (req, res) => {
   }
 });
 
-
-
 router.put("/:phaseId", authMiddleware, async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
     const { phaseId } = req.params;
-    const { phaseName, team_members } = req.body;
+
+    const {
+      phaseName,
+      startDate,
+      endDate,
+      budgetAllocated,
+      status,
+      tasks,
+      team_members,
+    } = req.body;
 
     const phase = await Phase.findByPk(phaseId, { transaction });
 
@@ -88,42 +127,53 @@ router.put("/:phaseId", authMiddleware, async (req, res) => {
       });
     }
 
-    if (phaseName) {
-      await phase.update({ phaseName }, { transaction });
+    const updateData = {};
+
+    if (phaseName !== undefined) updateData.phaseName = phaseName;
+    if (startDate !== undefined) updateData.startDate = startDate;
+    if (endDate !== undefined) updateData.endDate = endDate;
+    if (budgetAllocated !== undefined)
+      updateData.budgetAllocated = budgetAllocated;
+    if (status !== undefined) updateData.status = status;
+    if (tasks !== undefined) updateData.tasks = tasks;
+    if (Object.keys(updateData).length > 0) {
+      await phase.update(updateData, { transaction });
     }
 
-    if (team_members) {
-      // Remove all existing members
+    if (team_members !== undefined) {
+      // Remove existing members
       await PhaseTeamMember.destroy({
         where: { phase_id: phaseId },
         transaction,
       });
 
-      // Add new ones
-      const newMembers = team_members.map((member) => ({
-        phase_id: phaseId,
-        project_id: phase.projectId,
-        user_id: member.user_id,
-        hourly_rate: member.hourly_rate,
-        allocation: member.allocation || 1,
-        working_hours_per_month: member.working_hours_per_month || 160,
-        monthly_cost:
-          member.hourly_rate *
-          (member.working_hours_per_month || 160) *
-          (member.allocation || 1),
-      }));
+      if (team_members.length > 0) {
+        const newMembers = team_members.map((member) => ({
+          phase_id: phaseId,
+          project_id: phase.projectId,
+          user_id: member.user_id,
+          hourly_rate: member.hourly_rate || 0,
+          allocation: member.allocation || 1,
+          working_hours_per_month: member.working_hours_per_month || 160,
+          monthly_cost:
+            (member.hourly_rate || 0) *
+            (member.working_hours_per_month || 160) *
+            (member.allocation || 1),
+        }));
 
-      await PhaseTeamMember.bulkCreate(newMembers, { transaction });
+        await PhaseTeamMember.bulkCreate(newMembers, {
+          transaction,
+        });
+      }
     }
 
     await transaction.commit();
 
-    // ✅ Fetch updated data
     const updatedPhase = await Phase.findByPk(phaseId, {
       include: [
         {
           model: PhaseTeamMember,
-          as: "phaseTeamMembers", // must match your alias
+          as: "phaseTeamMembers",
         },
       ],
     });
