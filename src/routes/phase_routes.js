@@ -35,9 +35,7 @@ router.post("/", authMiddleware, async (req, res) => {
 
     let membersToInsert = [];
 
-    // ============================================
-    // ✅ OPTION 1: If manual team_members provided
-    // ============================================
+    
     if (team_members && team_members.length > 0) {
       membersToInsert = team_members.map((member) => ({
         phase_id: phase.id,
@@ -47,14 +45,11 @@ router.post("/", authMiddleware, async (req, res) => {
         allocation: member.allocation || 1,
         working_hours_per_month: member.working_hours_per_month || 160,
         monthly_cost:
-          (member.hourly_rate || 0) *
-          (member.working_hours_per_month || 160) *
-          (member.allocation || 1),
+          (member.monthly_salary || 0) *
+        ((member.allocation || 0) / 100),
       }));
     } else {
-      // ==================================================
-      // ✅ OPTION 2: Auto assign all project team members
-      // ==================================================
+      
 
       const projectMembers = await ProjectTeamMember.findAll({
         where: { project_id: projectId },
@@ -68,7 +63,8 @@ router.post("/", authMiddleware, async (req, res) => {
         hourly_rate: member.hourly_rate || 0,
         allocation: 1,
         working_hours_per_month: 160,
-        monthly_cost: monthly_cost,
+        monthly_cost: (member.monthly_salary || 0) *
+        ((member.allocation || 0) / 100),
       }));
     }
 
