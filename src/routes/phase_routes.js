@@ -12,7 +12,14 @@ router.post("/", authMiddleware, async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
-    const { phaseName, projectId, startDate, endDate, team_members } = req.body;
+    const { 
+      phaseName, 
+      projectId, 
+      startDate, 
+      endDate, 
+      budgetAllocated,   
+      team_members 
+    } = req.body;
 
     const phase = await Phase.create(
       {
@@ -20,8 +27,9 @@ router.post("/", authMiddleware, async (req, res) => {
         projectId,
         startDate,
         endDate,
+        budgetAllocated   
       },
-      { transaction },
+      { transaction }
     );
 
     if (team_members && team_members.length > 0) {
@@ -42,9 +50,7 @@ router.post("/", authMiddleware, async (req, res) => {
         };
       });
 
-      await PhaseTeamMember.bulkCreate(phaseMembers, {
-        transaction,
-      });
+      await PhaseTeamMember.bulkCreate(phaseMembers, { transaction });
     }
 
     await transaction.commit();
@@ -62,6 +68,8 @@ router.post("/", authMiddleware, async (req, res) => {
     });
   }
 });
+
+
 
 router.put("/:phaseId", authMiddleware, async (req, res) => {
   const transaction = await sequelize.transaction();
