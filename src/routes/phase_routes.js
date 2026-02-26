@@ -21,7 +21,7 @@ router.post("/", authMiddleware, async (req, res) => {
       team_members,
     } = req.body;
 
-    // ✅ Create Phase
+
     const phase = await Phase.create(
       {
         phaseName,
@@ -152,9 +152,8 @@ router.put("/:phaseId", authMiddleware, async (req, res) => {
           allocation: member.allocation || 1,
           working_hours_per_month: member.working_hours_per_month || 160,
           monthly_cost:
-            (member.hourly_rate || 0) *
-            (member.working_hours_per_month || 160) *
-            (member.allocation || 1),
+             (member.monthly_salary || 0) *
+        ((member.allocation || 0) / 100),
         }));
 
         await PhaseTeamMember.bulkCreate(newMembers, {
@@ -198,7 +197,7 @@ router.get("/:phaseId/members", async (req, res) => {
         {
           model: User,
           as: "user",
-          attributes: ["id", "firstName", "lastName", "email"],
+          attributes: ["id", "firstName", "lastName", "email","salary"],
         },
       ],
     });
