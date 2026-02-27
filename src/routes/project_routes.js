@@ -217,6 +217,7 @@ router.post("/", authMiddleware, async (req, res) => {
       progress_percentage,
       priority,
       geography,
+      description, 
     } = req.body;
 
     if (!project_name || !client_name || !project_owner) {
@@ -244,6 +245,7 @@ router.post("/", authMiddleware, async (req, res) => {
       progress_percentage,
       priority,
       geography,
+      description,
     });
 
     return res.status(201).json({
