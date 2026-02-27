@@ -167,6 +167,23 @@ module.exports = (sequelize, DataTypes) => {
       updatedAt: "updated_at",
     },
   );
+  
+SalesDeal.associate = (models) => {
+ 
+  SalesDeal.belongsTo(models.SalesTeam, {
+    foreignKey: "sales_rep_id",
+    as: "salesRep",
+  });
+    SalesDeal.belongsTo(models.Project, {
+    foreignKey: "project_id",
+    as: "project",
+  });
+
+  SalesDeal.hasMany(models.SalesActivity, {
+    foreignKey: "deal_id",
+    as: "activities",
+  });
+};
 
   return SalesDeal;
 };

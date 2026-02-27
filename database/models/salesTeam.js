@@ -82,19 +82,30 @@ module.exports = (sequelize, DataTypes) => {
     },
   );
 
-  //SELF REFERENCING RELATION
 
-  SalesTeam.associate = (models) => {
-    SalesTeam.belongsTo(models.SalesTeam, {
-      foreignKey: "team_lead_id",
-      as: "teamLead",
-    });
 
-    SalesTeam.hasMany(models.SalesTeam, {
-      foreignKey: "team_lead_id",
-      as: "teamMembers",
-    });
-  };
+ SalesTeam.associate = (models) => {
+  SalesTeam.belongsTo(models.SalesTeam, {
+    foreignKey: "team_lead_id",
+    as: "teamLead",
+  });
+
+  SalesTeam.hasMany(models.SalesTeam, {
+    foreignKey: "team_lead_id",
+    as: "teamMembers",
+  });
+
+  SalesTeam.hasMany(models.SalesDeal, {
+    foreignKey: "sales_rep_id",
+    as: "deals",
+  });
+
+  SalesTeam.hasMany(models.SalesActivity, {
+    foreignKey: "sales_rep_id",
+    as: "activities",
+  });
+};
+
 
   return SalesTeam;
 };

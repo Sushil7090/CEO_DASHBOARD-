@@ -58,6 +58,20 @@ module.exports = (sequelize, DataTypes) => {
       updatedAt: "updated_at",
       underscored: true,
     },
+    
   );
+  SalesActivity.associate = (models) => {
+  
+  SalesActivity.belongsTo(models.SalesDeal, {
+    foreignKey: "deal_id",
+    as: "deal",
+  });
+
+
+  SalesActivity.belongsTo(models.SalesTeam, {
+    foreignKey: "sales_rep_id",
+    as: "salesRep",
+  });
+};
   return SalesActivity;
 };
