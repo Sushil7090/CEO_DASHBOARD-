@@ -1,5 +1,5 @@
 const path = require('path');
-require('dotenv').config();   // ✅ correctly call dotenv
+require('dotenv').config();   //  correctly call dotenv
 
 module.exports = {
   'config': path.resolve('config', 'config.js'),

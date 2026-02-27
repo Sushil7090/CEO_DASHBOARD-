@@ -163,7 +163,6 @@ router.get("/details/:project_id", authMiddleware, async (req, res) => {
                 "lastName",
                 "email",
                 "role",
-                "salary"   
               ],
             },
           ],

@@ -76,7 +76,7 @@ router.get("/", authMiddleware, async (req, res) => {
 });
 
 //GET SINGLE SALES TEAM MEMBER
-//GET /api/sales-team/:id
+//GET /api/sales-team/:id [employee_id]
 router.get("/:id", authMiddleware, async (req, res) => {
   try {
     const member = await SalesTeam.findByPk(req.params.id);

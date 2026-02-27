@@ -42,12 +42,16 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(100),
         allowNull: true,
       },
-
+      
       project_owner: {
         type: DataTypes.STRING(100),
         allowNull: false,
       },
 
+      description: {
+       type: DataTypes.TEXT,   
+       allowNull: true,
+},
       start_date_planned: {
         type: DataTypes.DATEONLY,
         allowNull: true,
