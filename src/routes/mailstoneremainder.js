@@ -13,11 +13,11 @@ cron.schedule(
     try {
       const today = new Date();
 
-      // 🔹 1 day before
+      //  1 day before
       const oneDayBefore = new Date(today);
       oneDayBefore.setDate(today.getDate() + 1);
 
-      // 🔹 5 days before
+      // 5 days before
       const fiveDaysBefore = new Date(today);
       fiveDaysBefore.setDate(today.getDate() + 5);
 

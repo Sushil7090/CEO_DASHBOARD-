@@ -5,7 +5,6 @@ const routes = require('./src/routes/routes');
 
 // Load environment variables
 dotenv.config();
-
 const app = express();
 const PORT = process.env.PORT;
 
@@ -20,13 +19,21 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health Check API
+app.get('/healthcheck', (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    message: "Server is running successfully",
+    timestamp: new Date()
+  });
+});
+
 // API Routes
 app.use('/api', routes);
 
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-
 });
 
 module.exports = app;
