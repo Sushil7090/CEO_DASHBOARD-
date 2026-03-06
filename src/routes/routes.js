@@ -3,6 +3,8 @@ const router = express.Router();
 
 require("./mailstoneremainder");
 require("./phaseReminder");
+require("./salesremainder");
+
 const authRoutes = require("./auth");
 const usersRoutes = require("./userRoutes");
 const projectRoutes = require("./project_routes");

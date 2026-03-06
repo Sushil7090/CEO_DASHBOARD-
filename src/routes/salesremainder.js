@@ -1,19 +1,18 @@
 const cron = require("node-cron");
 const { Op } = require("sequelize");
-const { SalesActivity, SalesTeam, User } = require("../../database/models");
+const { SalesActivity, User } = require("../../database/models");
 const sendMail = require("../utiils/mailer");
 
 console.log("Sales Activity Reminder Cron Loaded");
 
 cron.schedule(
-  "* * * * *", // runs every minute
+  "* * * * *",
   async () => {
-    console.log("Sales Cron running:", new Date());
-
     try {
+      console.log("\nSales Cron running:", new Date());
+
       const now = new Date();
 
-      // 1 day before
       const oneDayBefore = new Date(now);
       oneDayBefore.setDate(now.getDate() + 1);
 
@@ -29,10 +28,10 @@ cron.schedule(
         return d;
       };
 
-      //  Find activities scheduled tomorrow
+      // Calls scheduled tomorrow
       const tomorrowCalls = await SalesActivity.findAll({
         where: {
-          next_action_date: {
+          next_follow_up: {
             [Op.between]: [
               startOfDay(oneDayBefore),
               endOfDay(oneDayBefore),
@@ -41,12 +40,12 @@ cron.schedule(
         },
       });
 
-      //  Find calls scheduled right now
+      // Calls happening now
       const currentCalls = await SalesActivity.findAll({
         where: {
-          next_action_date: {
+          next_follow_up: {
             [Op.lte]: now,
-            [Op.gte]: new Date(now.getTime() - 60000), // last 1 minute
+            [Op.gte]: new Date(now.getTime() - 60000),
           },
         },
       });
@@ -56,13 +55,19 @@ cron.schedule(
       console.log("Calls found:", allCalls.length);
 
       for (const activity of allCalls) {
+
         const salesUser = await User.findOne({
           where: { id: activity.sales_rep_id },
         });
 
-        if (!salesUser || !salesUser.email) continue;
+        if (!salesUser || !salesUser.email) {
+          continue; // skip silently
+        }
 
-        const callDate = new Date(activity.next_action_date);
+        console.log("User fetched:", salesUser.email);
+        console.log("Sending reminder to:", salesUser.email);
+
+        const callDate = new Date(activity.next_follow_up);
 
         const isTomorrow =
           callDate >= startOfDay(oneDayBefore) &&
@@ -76,13 +81,17 @@ cron.schedule(
           salesUser.email,
           "Sales Call Reminder",
           `Hello ${salesUser.firstName},
-           ${message}
-          Deal: ${activity.deal_id}
-          Please make sure to attend the call.`
+
+${message}
+
+Deal ID: ${activity.deal_id}
+
+Please make sure to attend the call.`
         );
 
         console.log("Reminder sent to:", salesUser.email);
       }
+
     } catch (error) {
       console.error("Sales cron error:", error);
     }
