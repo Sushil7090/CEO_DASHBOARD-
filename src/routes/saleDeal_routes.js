@@ -31,7 +31,7 @@ router.get("/", async (req, res) => {
 });
 
 // GET SINGLE DEAL
-// GET /api/sales-deals/:id
+// GET /api/sales-deal/:id
 router.get("/:id", async (req, res) => {
   try {
     const deal = await SalesDeal.findByPk(req.params.id);
