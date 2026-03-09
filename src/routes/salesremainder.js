@@ -7,7 +7,7 @@ console.log("Sales Activity Reminder Cron Loaded");
 
 // Cron runs every minute
 cron.schedule(
-  "* 10 * * *",
+  "0 10 * * *",
   async () => {
     try {
 
